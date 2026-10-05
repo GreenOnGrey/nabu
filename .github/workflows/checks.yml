@@ -1,4 +1,5 @@
-# Проверки на каждый PR: shellcheck, actionlint, чарты, сборка payload выкатки.
+# Проверки на каждый PR: actionlint и сборка payload выкатки. Чарты Nabu и
+# bin/nabu-deploy живут в hammurapi-infra и проверяются там.
 name: checks
 on:
   pull_request:
@@ -7,15 +8,6 @@ on:
 permissions: { contents: read }
 
 jobs:
-  shellcheck:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: shellcheck
-        run: |
-          curl -fsSL "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz" | tar -xJ
-          ./shellcheck-v0.11.0/shellcheck -x bin/nabu-deploy .github/scripts/*.sh
-
   actionlint:
     runs-on: ubuntu-24.04
     steps:
@@ -24,20 +16,22 @@ jobs:
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/914e7df21a07ef503a81201c76d2b11c789d3fca/scripts/download-actionlint.bash) 1.7.12
           ./actionlint -color
-
-  charts:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Helm
+      # actionlint не разбирает jq: сборка payload выкатки компилируется, пустые
+      # значения не попадают на стенд, секреты — только в secrets.
+      - name: jq payload deploy-component.yml
         run: |
-          set -a; source config/versions.env; set +a
-          curl -fsSL "https://get.helm.sh/helm-$HELM_VERSION-linux-amd64.tar.gz" -o /tmp/helm.tgz
-          echo "$HELM_SHA256  /tmp/helm.tgz" | sha256sum -c -
-          tar -xzf /tmp/helm.tgz -C /tmp && sudo install /tmp/linux-amd64/helm /usr/local/bin/helm
-      - name: lint и рендеринг
-        run: |
-          for chart in nabu-core nabu-web; do
-            helm lint "charts/$chart" --set image.tag=v1.0.0 --set publicBaseDomain=example.org
-            helm template t "charts/$chart" -n nabu --set image.tag=v1.0.0 --set publicBaseDomain=example.org >/dev/null
-          done
+          python3 - <<'EOF'
+          import json, os, re, subprocess
+          s = open(".github/workflows/deploy-component.yml", encoding="utf-8").read()
+          exprs = re.findall(r"payload=\$\(jq -cn '(.*?)'\)", s, re.S)
+          assert len(exprs) == 2, f"payload expressions: {len(exprs)}"
+          env = dict(os.environ, IMAGE="img", NABU_GHCR_PULL_TOKEN="g", NABU_AUTH_PROVIDER="github",
+                     NABU_GITHUB_CLIENT_ID="c", NABU_BOOTSTRAP_ADMINS="a@x.org", NABU_SECRETS_KEY="k",
+                     NABU_GITHUB_CLIENT_SECRET="s", PI_VERSION="1.0.0")
+          run = lambda e: json.loads(subprocess.run(["jq", "-cn", e], env=env, check=True, capture_output=True, text=True).stdout)
+          core, web = run(exprs[0]), run(exprs[1])
+          assert core["config"]["GITHUB_CLIENT_ID"] == "c" and "OIDC_ISSUER" not in core["config"], core["config"]
+          assert core["secrets"] == {"SECRETS_KEY": "k", "GITHUB_CLIENT_SECRET": "s"}, core["secrets"].keys()
+          assert web == {"image": "img", "ghcrPullToken": "g"}, web
+          print("payload ok")
+          EOF

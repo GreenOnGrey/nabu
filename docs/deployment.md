@@ -2,22 +2,27 @@
 
 Nabu runs on the Hammurapi stand: the same minikube machine, the namespaces `nabu` and
 `nabu-sandboxes`, the stand's Postgres (CloudNativePG), Kafka (Strimzi) and S3 (SeaweedFS) with a
-separate database, bucket and topic prefix. The stand is prepared by `hammurapi-infra`; Nabu adds
-only its releases.
+separate database, bucket and topic prefix. It is deployed exactly like Hammurapi: the charts
+`nabu-core`, `nabu-web` and the script `bin/nabu-deploy` live in `hammurapi-infra` next to those of
+Hammurapi, and this repository holds only the docs and the reusable deploy workflow. A tag of this
+repository does not touch the machine.
 
 ```text
-nabu tag vX.Y.Z           → release.yml: charts nabu-core, nabu-web to oci://ghcr.io/<org>/charts,
-                            bin/nabu-deploy to /opt/nabu/releases/<tag> (current → tag)
-nabu-core / nabu-web tag  → release.yml there: image, SBOM, cosign signature, Trivy,
-                            then deploy-component.yml of this repo (DEPLOY_WORKFLOW_REF)
-deploy-component.yml      → configuration check, signature check, SSH (or IAP) to the machine,
-                            JSON with configuration and secrets on stdin of bin/nabu-deploy,
-                            checks through the public domains
+hammurapi-infra tag vX.Y.Z → deploy-prod.yml: charts hammurapi-*, nabu-* (version X.Y.Z) to
+                             oci://ghcr.io/<org>/charts; the stand with bin/nabu-deploy in
+                             /opt/hammurapi-infra/current
+nabu tag vX.Y.Z            → only a version of deploy-component.yml for core and web
+nabu-core / nabu-web tag   → release.yml there: image, SBOM, cosign signature, Trivy,
+                             then deploy-component.yml of this repo (DEPLOY_WORKFLOW_REF)
+deploy-component.yml       → configuration check, signature check, SSH (or IAP) to the machine,
+                             JSON with configuration and secrets on stdin of
+                             /opt/hammurapi-infra/current/bin/nabu-deploy, checks through the public domains
 ```
 
-The order of a change that touches the charts or the workflow: tag this repository, bump
-`DEPLOY_WORKFLOW_REF` and `CHART_VERSION` in `nabu-core/deploy/versions.env` and
-`nabu-web/deploy/versions.env` (`deploy/sync-ref.sh`), then tag core and web.
+`nabu-core/deploy/versions.env` and `nabu-web/deploy/versions.env` pin `DEPLOY_WORKFLOW_REF` (a tag
+of this repository) and `CHART_VERSION` (a release of `hammurapi-infra`). The order of a change:
+charts or `nabu-deploy` → tag `hammurapi-infra`; the workflow → tag this repository; then bump
+`deploy/versions.env` in core and web (`deploy/sync-ref.sh`) and tag them.
 
 ## Before the first release
 

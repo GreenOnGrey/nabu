@@ -15,14 +15,17 @@ as [Hammurapi](../hammurapi): a product starts a run, Nabu executes it with the 
 streams the events back. Administrators choose the models, the harness, the catalog and the clients,
 and see usage and an audit trail of every tool call.
 
-This repository holds the **documentation, Helm charts and the deploy tooling**. The code lives in two
+This repository holds the **documentation and the reusable deploy workflow**. The code lives in two
 sibling repositories:
 
 | Repository | What it is |
 | --- | --- |
 | [`nabu-core`](../nabu-core) | Backend: one Go binary with the modes `api`, `worker`, `agent`, `relay`, `sandbox`, `migrate`, `cleaner`; the release image carries the Pi agent |
 | [`nabu-web`](../nabu-web) | Frontend: React single-page app (chat, memory, space, tasks, connections, administration) |
-| `nabu` (this one) | Docs, charts `nabu-core` and `nabu-web`, `bin/nabu-deploy`, the reusable deploy workflow |
+| `nabu` (this one) | Docs and the reusable deploy workflow (`deploy-component.yml`) |
+
+As for Hammurapi, the charts `nabu-core`, `nabu-web` and the deploy script `bin/nabu-deploy` live in
+`hammurapi-infra`, the repository of the stand.
 
 The specification is `FTR.NAB.CMN-0001` in [`hammurapi-specs`](../hammurapi-specs/specs/NAB/CMN/FTR.NAB.CMN-0001).
 
@@ -66,7 +69,8 @@ agent operator, one process per session; tools that touch files go to the worksp
 
 On the Hammurapi stand Nabu is deployed into the same minikube, namespaces `nabu` and
 `nabu-sandboxes`, by GitHub Actions: a tag `vX.Y.Z` of `nabu-core` or `nabu-web` builds and signs the
-image and calls `deploy-component.yml` of this repository, which runs `bin/nabu-deploy` on the machine.
+image and calls `deploy-component.yml` of this repository, which runs `bin/nabu-deploy` of
+`hammurapi-infra` on the machine.
 Sign-in is GitHub restricted to an organization (or any OIDC provider). See
 [docs/deployment.md](docs/deployment.md) and [docs/configuration.md](docs/configuration.md).
 

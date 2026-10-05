@@ -2,10 +2,12 @@
 # release.yml репозиториев nabu-core и nabu-web.
 #   uses: GreenOnGrey/nabu/.github/workflows/deploy-component.yml@<DEPLOY_WORKFLOW_REF>
 #
-# Nabu выкатывается на стенд Hammurapi (тот же minikube, namespace nabu). На
-# машине выполняется bin/nabu-deploy из /opt/nabu/current (его кладёт release.yml
-# этого репозитория). Секреты — переменные и секреты организации с префиксом
-# NABU_; на машину они передаются только в stdin SSH-сессии.
+# Nabu выкатывается на стенд Hammurapi (тот же minikube, namespace nabu), как
+# Hammurapi: на машине выполняется bin/nabu-deploy из /opt/hammurapi-infra/current,
+# а чарты nabu-core и nabu-web публикует релиз hammurapi-infra (CHART_VERSION —
+# версия стенда). Этот репозиторий на машину ничего не кладёт. Секреты —
+# переменные и секреты организации с префиксом NABU_; на машину они передаются
+# только в stdin SSH-сессии.
 #
 # Вход — через GitHub (как в Hammurapi) только для участников организации
 # NABU_GITHUB_ALLOWED_ORG (по умолчанию — владелец репозитория, GreenOnGrey), или
@@ -36,7 +38,7 @@ jobs:
       CALLBACK_URL: ${{ inputs.callback_url }}
       DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
       DEPLOY_TRANSPORT: ${{ vars.DEPLOY_TRANSPORT || 'ssh' }}
-      NABU_DIR: /opt/nabu
+      PROD_DIR: /opt/hammurapi-infra
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       CALLBACK_SECRET: ${{ secrets.NABU_DEPLOY_CALLBACK_SECRET }}
     steps:
@@ -235,7 +237,7 @@ jobs:
           fi
           set +e
           # shellcheck disable=SC2086
-          printf '%s' "$payload" | remote "bash $NABU_DIR/current/bin/nabu-deploy $COMPONENT $TAG $CHART $ROTATE" | tee deploy.log
+          printf '%s' "$payload" | remote "bash $PROD_DIR/current/bin/nabu-deploy $COMPONENT $TAG $CHART $ROTATE" | tee deploy.log
           rc=${PIPESTATUS[1]}
           set -e
           result=$(tail -n 1 deploy.log)
