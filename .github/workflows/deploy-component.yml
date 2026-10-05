@@ -1,0 +1,340 @@
+# Переиспользуемая выкатка Nabu (FTR.NAB.CMN-0001 R29, arch §11): вызывается
+# release.yml репозиториев nabu-core и nabu-web.
+#   uses: GreenOnGrey/nabu/.github/workflows/deploy-component.yml@<DEPLOY_WORKFLOW_REF>
+#
+# Nabu выкатывается на стенд Hammurapi (тот же minikube, namespace nabu). На
+# машине выполняется bin/nabu-deploy из /opt/nabu/current (его кладёт release.yml
+# этого репозитория). Секреты — переменные и секреты организации с префиксом
+# NABU_; на машину они передаются только в stdin SSH-сессии.
+#
+# Вход — через GitHub (как в Hammurapi) только для участников организации
+# NABU_GITHUB_ALLOWED_ORG (по умолчанию — владелец репозитория, GreenOnGrey), или
+# через OIDC (NABU_AUTH_PROVIDER=oidc).
+name: deploy-component
+on:
+  workflow_call:
+    inputs:
+      component: { type: string, required: true }            # nabu-core | nabu-web
+      tag: { type: string, required: true }                  # vX.Y.Z
+      run_id: { type: string, default: "" }                  # контракт выкатки FTR.HMR.CMN-0002
+      callback_url: { type: string, default: "" }
+      environment: { type: string, default: production }
+      verify_signature: { type: boolean, default: false }    # выкатка без пересборки: cosign verify
+      allow_key_rotation: { type: boolean, default: false }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: production
+    concurrency: { group: "deploy-${{ inputs.component }}", cancel-in-progress: false }
+    permissions: { contents: read, packages: read, id-token: write }
+    timeout-minutes: 45
+    env:
+      COMPONENT: ${{ inputs.component }}
+      TAG: ${{ inputs.tag }}
+      RUN_ID: ${{ inputs.run_id }}
+      CALLBACK_URL: ${{ inputs.callback_url }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      DEPLOY_TRANSPORT: ${{ vars.DEPLOY_TRANSPORT || 'ssh' }}
+      NABU_DIR: /opt/nabu
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      CALLBACK_SECRET: ${{ secrets.NABU_DEPLOY_CALLBACK_SECRET }}
+    steps:
+      - name: Общие функции
+        run: |
+          cat >"$RUNNER_TEMP/nabu.sh" <<'EOS'
+          # send_callback <started|success|failure> [ошибка] — вебхук результата
+          # по контракту FTR.HMR.CMN-0002: HMAC-SHA256 тела, заголовки X-Hammurapi-*.
+          send_callback() {
+            [[ -n $CALLBACK_URL ]] || return 0
+            local status=$1 err=${2:-} body ts sig i
+            body=$(jq -cn --arg r "$RUN_ID" --arg s "$COMPONENT" --arg e "$DEPLOY_ENVIRONMENT" --arg ref "$TAG" \
+              --arg st "$status" --arg u "$RUN_URL" --arg err "$err" \
+              '{runId: $r, service: $s, environment: $e, ref: $ref, status: $st, runUrl: $u} + (if $err != "" then {error: $err} else {} end)')
+            for i in 1 2 3; do
+              ts=$(date +%s)
+              sig=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$CALLBACK_SECRET" -hex | sed 's/^.* //')
+              if curl -fsS --max-time 15 -X POST "$CALLBACK_URL" -H 'Content-Type: application/json' \
+                  -H "X-Hammurapi-Timestamp: $ts" -H "X-Hammurapi-Signature: sha256=$sig" --data "$body" >/dev/null; then
+                return 0
+              fi
+              ((i < 3)) && sleep 10
+            done
+            echo "::warning::вебхук результата «$status» не доставлен"
+          }
+          remote() {
+            case $DEPLOY_TRANSPORT in
+              ssh) ssh -F "$HOME/.ssh/config" prod -- "$1" ;;
+              gcp-iap) gcloud compute ssh "$GCP_INSTANCE" --project "$GCP_PROJECT" --zone "$GCP_ZONE" \
+                  --tunnel-through-iap --quiet --command "$1" ;;
+              *) echo "::error::DEPLOY_TRANSPORT должен быть ssh или gcp-iap"; return 1 ;;
+            esac
+          }
+          EOS
+
+      - name: Вебхук started
+        if: inputs.callback_url != ''
+        run: |
+          source "$RUNNER_TEMP/nabu.sh"
+          send_callback started
+
+      - name: Параметры
+        id: params
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          [[ $COMPONENT == nabu-core || $COMPONENT == nabu-web ]] || { echo "::error::component: nabu-core или nabu-web"; exit 1; }
+          [[ $INPUT_TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::тег «$INPUT_TAG» не в формате vX.Y.Z"; exit 1; }
+          [[ $DEPLOY_ENVIRONMENT == production ]] || { echo "::error::стенд — только окружение production"; exit 1; }
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/$COMPONENT" >>"$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: "refs/tags/${{ inputs.tag }}" }
+
+      - name: Проверка конфигурации (до подключения к машине)
+        id: config
+        env:
+          NABU_AUTH_PROVIDER: ${{ vars.NABU_AUTH_PROVIDER || 'github' }}
+          NABU_GITHUB_CLIENT_ID: ${{ vars.NABU_GITHUB_CLIENT_ID }}
+          NABU_OIDC_ISSUER: ${{ vars.NABU_OIDC_ISSUER }}
+          NABU_OIDC_CLIENT_ID: ${{ vars.NABU_OIDC_CLIENT_ID }}
+          NABU_BOOTSTRAP_ADMINS: ${{ vars.NABU_BOOTSTRAP_ADMINS }}
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_USER: ${{ vars.PROD_USER }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}
+          GCP_INSTANCE: ${{ vars.GCP_INSTANCE }}
+          GCP_WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          HAS_PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY != '' }}
+          HAS_PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS != '' }}
+          HAS_NABU_GITHUB_CLIENT_SECRET: ${{ secrets.NABU_GITHUB_CLIENT_SECRET != '' }}
+          HAS_NABU_OIDC_CLIENT_SECRET: ${{ secrets.NABU_OIDC_CLIENT_SECRET != '' }}
+          HAS_NABU_SECRETS_KEY: ${{ secrets.NABU_SECRETS_KEY != '' }}
+          HAS_NABU_GHCR_PULL_TOKEN: ${{ secrets.NABU_GHCR_PULL_TOKEN != '' || secrets.HAMMURAPI_GHCR_PULL_TOKEN != '' }}
+          HAS_NABU_DEPLOY_CALLBACK_SECRET: ${{ secrets.NABU_DEPLOY_CALLBACK_SECRET != '' }}
+        run: |
+          missing=()
+          need_var() { local k; for k in "$@"; do [[ -n ${!k:-} ]] || missing+=("$k (переменная)"); done; }
+          need_secret() { local k h; for k in "$@"; do h="HAS_$k"; [[ ${!h:-false} == true ]] || missing+=("$k (секрет)"); done; }
+          case $DEPLOY_TRANSPORT in
+            ssh) need_var PROD_HOST PROD_USER; need_secret PROD_SSH_KEY PROD_KNOWN_HOSTS ;;
+            gcp-iap) need_var GCP_PROJECT GCP_ZONE GCP_INSTANCE GCP_WIF_PROVIDER GCP_SERVICE_ACCOUNT ;;
+            *) missing+=("DEPLOY_TRANSPORT (ssh | gcp-iap)") ;;
+          esac
+          need_secret NABU_GHCR_PULL_TOKEN
+          if [[ $COMPONENT == nabu-core ]]; then
+            need_var NABU_BOOTSTRAP_ADMINS
+            need_secret NABU_SECRETS_KEY
+            case $NABU_AUTH_PROVIDER in
+              github) need_var NABU_GITHUB_CLIENT_ID; need_secret NABU_GITHUB_CLIENT_SECRET ;;
+              oidc) need_var NABU_OIDC_ISSUER NABU_OIDC_CLIENT_ID; need_secret NABU_OIDC_CLIENT_SECRET ;;
+              *) missing+=("NABU_AUTH_PROVIDER (github | oidc)") ;;
+            esac
+          fi
+          [[ -n $CALLBACK_URL ]] && need_secret NABU_DEPLOY_CALLBACK_SECRET
+          if ((${#missing[@]})); then
+            printf -v list '%s, ' "${missing[@]}"
+            echo "::error::не заданы переменные и секреты организации: ${list%, }"
+            echo "error=не заданы: ${list%, }" >>"$GITHUB_OUTPUT"
+            exit 1
+          fi
+          chart=$(sed -n 's/^CHART_VERSION=//p' deploy/versions.env)
+          [[ $chart =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::deploy/versions.env: нет CHART_VERSION"; exit 1; }
+          echo "chart=$chart" >>"$GITHUB_OUTPUT"
+          echo "pi=$(sed -n 's/^PI_VERSION=//p' deploy/versions.env)" >>"$GITHUB_OUTPUT"
+          echo "Выкатка $COMPONENT $TAG, чарт $chart, вход $NABU_AUTH_PROVIDER, транспорт $DEPLOY_TRANSPORT"
+
+      - name: Подпись образа
+        if: inputs.verify_signature
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: cosign verify (образ собран release.yml этого репозитория)
+        if: inputs.verify_signature
+        env:
+          IMAGE: ${{ steps.params.outputs.image }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin >/dev/null
+          cosign verify "$IMAGE:$TAG" \
+            --certificate-identity-regexp "^https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/v" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null \
+            || { echo "::error::у $IMAGE:$TAG нет подписи release.yml этого репозитория — выкатка остановлена"; exit 1; }
+
+      - name: Доступ к машине (ssh)
+        if: env.DEPLOY_TRANSPORT == 'ssh'
+        env:
+          PROD_HOST: ${{ vars.PROD_HOST }}
+          PROD_USER: ${{ vars.PROD_USER }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_KNOWN_HOSTS: ${{ secrets.PROD_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh && umask 077
+          printf '%s\n' "$PROD_SSH_KEY" | tr -d '\r' >~/.ssh/deploy_key
+          printf '%s\n' "$PROD_KNOWN_HOSTS" | tr -d '\r' >~/.ssh/deploy_known_hosts
+          printf 'Host prod\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n  UserKnownHostsFile ~/.ssh/deploy_known_hosts\n  StrictHostKeyChecking yes\n  ServerAliveInterval 30\n' \
+            "$PROD_HOST" "$PROD_USER" >~/.ssh/config
+      - name: Доступ к машине (gcp-iap)
+        if: env.DEPLOY_TRANSPORT == 'gcp-iap'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - if: env.DEPLOY_TRANSPORT == 'gcp-iap'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Выкатка
+        id: deploy
+        env:
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}
+          GCP_INSTANCE: ${{ vars.GCP_INSTANCE }}
+          IMAGE: ${{ steps.params.outputs.image }}
+          CHART: ${{ steps.config.outputs.chart }}
+          PI_VERSION: ${{ steps.config.outputs.pi }}
+          ROTATE: ${{ inputs.allow_key_rotation && '--allow-key-rotation' || '' }}
+          NABU_AUTH_PROVIDER: ${{ vars.NABU_AUTH_PROVIDER || 'github' }}
+          NABU_GITHUB_CLIENT_ID: ${{ vars.NABU_GITHUB_CLIENT_ID }}
+          NABU_GITHUB_ALLOWED_ORG: ${{ vars.NABU_GITHUB_ALLOWED_ORG || github.repository_owner }}
+          NABU_OIDC_ISSUER: ${{ vars.NABU_OIDC_ISSUER }}
+          NABU_OIDC_CLIENT_ID: ${{ vars.NABU_OIDC_CLIENT_ID }}
+          NABU_OIDC_PROVIDER_NAME: ${{ vars.NABU_OIDC_PROVIDER_NAME }}
+          NABU_BOOTSTRAP_ADMINS: ${{ vars.NABU_BOOTSTRAP_ADMINS }}
+          NABU_DEFAULT_LANGUAGE: ${{ vars.NABU_DEFAULT_LANGUAGE || 'en' }}
+          NABU_DEFAULT_TIMEZONE: ${{ vars.NABU_DEFAULT_TIMEZONE || 'Europe/Moscow' }}
+          NABU_WHISPER_URL: ${{ vars.NABU_WHISPER_URL }}
+          NABU_GITHUB_CLIENT_SECRET: ${{ secrets.NABU_GITHUB_CLIENT_SECRET }}
+          NABU_OIDC_CLIENT_SECRET: ${{ secrets.NABU_OIDC_CLIENT_SECRET }}
+          NABU_SECRETS_KEY: ${{ secrets.NABU_SECRETS_KEY }}
+          NABU_TELEGRAM_BOT_TOKEN: ${{ secrets.NABU_TELEGRAM_BOT_TOKEN }}
+          # Необязательный: ключ DeepSeek для первого запуска; дальше подключения
+          # к моделям настраиваются в «Администрирование → Подключения к моделям».
+          NABU_BOOTSTRAP_LLM_API_KEY: ${{ secrets.NABU_BOOTSTRAP_LLM_API_KEY }}
+          NABU_SKILLS_GIT_TOKEN: ${{ secrets.NABU_SKILLS_GIT_TOKEN }}
+          NABU_GHCR_PULL_TOKEN: ${{ secrets.NABU_GHCR_PULL_TOKEN || secrets.HAMMURAPI_GHCR_PULL_TOKEN }}
+        run: |
+          source "$RUNNER_TEMP/nabu.sh"
+          # Конфигурация и секреты — одним JSON в stdin SSH; jq берёт значения
+          # из окружения ($ENV), а не из аргументов. Пустые значения опускаются.
+          if [[ $COMPONENT == nabu-core ]]; then
+            payload=$(jq -cn '
+              def nonempty: with_entries(select(.value != null and .value != ""));
+              {
+              image: $ENV.IMAGE,
+              config: ({AUTH_PROVIDER: $ENV.NABU_AUTH_PROVIDER, GITHUB_CLIENT_ID: $ENV.NABU_GITHUB_CLIENT_ID,
+                GITHUB_ALLOWED_ORG: $ENV.NABU_GITHUB_ALLOWED_ORG, OIDC_ISSUER: $ENV.NABU_OIDC_ISSUER,
+                OIDC_CLIENT_ID: $ENV.NABU_OIDC_CLIENT_ID, OIDC_PROVIDER_NAME: $ENV.NABU_OIDC_PROVIDER_NAME,
+                BOOTSTRAP_ADMINS: $ENV.NABU_BOOTSTRAP_ADMINS, DEFAULT_LANGUAGE: $ENV.NABU_DEFAULT_LANGUAGE,
+                DEFAULT_TIMEZONE: $ENV.NABU_DEFAULT_TIMEZONE, WHISPER_URL: $ENV.NABU_WHISPER_URL,
+                PI_VERSION: $ENV.PI_VERSION} | nonempty),
+              secrets: ({SECRETS_KEY: $ENV.NABU_SECRETS_KEY, GITHUB_CLIENT_SECRET: $ENV.NABU_GITHUB_CLIENT_SECRET,
+                OIDC_CLIENT_SECRET: $ENV.NABU_OIDC_CLIENT_SECRET, TELEGRAM_BOT_TOKEN: $ENV.NABU_TELEGRAM_BOT_TOKEN,
+                BOOTSTRAP_LLM_API_KEY: $ENV.NABU_BOOTSTRAP_LLM_API_KEY, SKILLS_GIT_TOKEN: $ENV.NABU_SKILLS_GIT_TOKEN} | nonempty),
+              ghcrPullToken: $ENV.NABU_GHCR_PULL_TOKEN}')
+          else
+            payload=$(jq -cn '{image: $ENV.IMAGE, ghcrPullToken: $ENV.NABU_GHCR_PULL_TOKEN}')
+          fi
+          set +e
+          # shellcheck disable=SC2086
+          printf '%s' "$payload" | remote "bash $NABU_DIR/current/bin/nabu-deploy $COMPONENT $TAG $CHART $ROTATE" | tee deploy.log
+          rc=${PIPESTATUS[1]}
+          set -e
+          result=$(tail -n 1 deploy.log)
+          if jq -e . >/dev/null 2>&1 <<<"$result"; then
+            echo "result=$(jq -c . <<<"$result")" >>"$GITHUB_OUTPUT"
+          fi
+          if ((rc != 0)); then
+            echo "::error::nabu-deploy завершился с кодом $rc: $(jq -r '.error // "см. журнал"' <<<"$result" 2>/dev/null)"
+            exit "$rc"
+          fi
+
+      - name: Проверки после выкатки (через публичные домены)
+        env:
+          RESULT: ${{ steps.deploy.outputs.result }}
+          NABU_AUTH_PROVIDER: ${{ vars.NABU_AUTH_PROVIDER || 'github' }}
+        run: |
+          web=$(jq -r .webUrl <<<"$RESULT")
+          api=$(jq -r .apiUrl <<<"$RESULT")
+          first=$(jq -r .firstInstall <<<"$RESULT")
+          [[ $api == https://* && $web == https://* ]] || { echo "::error::нет адресов в итоге выкатки"; exit 1; }
+          retry() { local _; for _ in $(seq 1 10); do "$@" && return 0; sleep 15; done; return 1; }
+          check() { local name=$1; shift; if retry "$@"; then echo "✓ $name"; echo "- ✓ $name" >>"$GITHUB_STEP_SUMMARY"; else echo "::error::✗ $name"; echo "- ✗ $name" >>"$GITHUB_STEP_SUMMARY"; failed=1; fi; }
+          failed=0
+          echo "### Проверки $COMPONENT $TAG" >>"$GITHUB_STEP_SUMMARY"
+          host() { sed -E 's#^https://##' <<<"$1"; }
+          # shellcheck disable=SC2329
+          redirect() { [[ $(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 15 "http://$1/") =~ ^30[178]\ https:// ]]; }
+          if [[ $COMPONENT == nabu-core ]]; then
+            # shellcheck disable=SC2329
+            config_ok() { curl -fsS --max-time 15 "$api/api/v1/config" | jq -e --arg p "$NABU_AUTH_PROVIDER" '.authProvider == $p' >/dev/null; }
+            # shellcheck disable=SC2329
+            jwks_ok() { curl -fsS --max-time 15 "$api/.well-known/jwks.json" | jq -e '.keys | length > 0' >/dev/null; }
+            # shellcheck disable=SC2329
+            login_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/auth/login") == 302 ]]; }
+            # shellcheck disable=SC2329
+            metrics_closed() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/metrics") != 200 ]]; }
+            # shellcheck disable=SC2329
+            relay_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/v1/workspaces/connect") == 401 ]]; }
+            check "GET $api/api/v1/config — вход $NABU_AUTH_PROVIDER" config_ok
+            check "$api/.well-known/jwks.json — ключи подписи" jwks_ok
+            check "$api/auth/login — редирект к провайдеру" login_ok
+            check "$api/v1/workspaces/connect без токена — 401 (relay)" relay_ok
+            check "$api/metrics закрыт" metrics_closed
+            check "http://$(host "$api") → HTTPS" redirect "$(host "$api")"
+            if [[ $first == true ]]; then
+              # shellcheck disable=SC2329
+              admins_ok() { curl -fsS --max-time 15 "$api/api/v1/config" | jq -e '.bootstrapAdminsConfigured == true' >/dev/null; }
+              check "первая установка: первые администраторы заданы" admins_ok
+            fi
+          else
+            # shellcheck disable=SC2329
+            page_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code} %{content_type}' --max-time 15 "$web/") =~ ^200\ text/html ]]; }
+            # shellcheck disable=SC2329
+            cfg_ok() { curl -fsS --max-time 15 "$web/config.json" | jq -e --arg a "$api" '.apiBaseUrl == $a' >/dev/null; }
+            # shellcheck disable=SC2329
+            cors_ok() {
+              curl -sS -D - -o /dev/null --max-time 15 -X OPTIONS "$api/api/v1/me" -H "Origin: $web" \
+                -H 'Access-Control-Request-Method: GET' | tr -d '\r' | grep -qi "^access-control-allow-origin: $web\$"
+            }
+            check "GET $web/ — 200 text/html" page_ok
+            check "$web/config.json: apiBaseUrl = $api" cfg_ok
+            check "CORS $api с Origin $web" cors_ok
+            check "http://$(host "$web") → HTTPS" redirect "$(host "$web")"
+          fi
+          exit "$failed"
+
+      - name: Диагностика
+        if: failure() && steps.deploy.outputs.result != ''
+        env:
+          RESULT: ${{ steps.deploy.outputs.result }}
+          GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+          GCP_ZONE: ${{ vars.GCP_ZONE }}
+          GCP_INSTANCE: ${{ vars.GCP_INSTANCE }}
+        run: |
+          source "$RUNNER_TEMP/nabu.sh"
+          path=$(jq -r '.diagnostics // empty' <<<"$RESULT")
+          [[ $path =~ ^/[A-Za-z0-9._/-]+\.tar\.gz$ ]] || { echo "диагностики нет"; exit 0; }
+          remote "cat '$path'" >deploy-diagnostics.tar.gz || true
+      - name: Артефакт диагностики
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: deploy-${{ inputs.component }}-${{ inputs.tag }}
+          path: |
+            deploy.log
+            deploy-diagnostics.tar.gz
+          if-no-files-found: ignore
+
+      - name: Вебхук результата
+        if: always() && inputs.callback_url != ''
+        env:
+          JOB_STATUS: ${{ job.status }}
+          RESULT: ${{ steps.deploy.outputs.result }}
+          CONFIG_ERROR: ${{ steps.config.outputs.error }}
+        run: |
+          source "$RUNNER_TEMP/nabu.sh"
+          if [[ $JOB_STATUS == success ]]; then
+            send_callback success
+          else
+            err=$(jq -r '.error // empty' <<<"${RESULT:-{\}}" 2>/dev/null || true)
+            send_callback failure "${err:-${CONFIG_ERROR:-выкатка не выполнена, см. $RUN_URL}}"
+          fi
