@@ -260,37 +260,26 @@ jobs:
           check() { local name=$1; shift; if retry "$@"; then echo "✓ $name"; echo "- ✓ $name" >>"$GITHUB_STEP_SUMMARY"; else echo "::error::✗ $name"; echo "- ✗ $name" >>"$GITHUB_STEP_SUMMARY"; failed=1; fi; }
           failed=0
           echo "### Проверки $COMPONENT $TAG" >>"$GITHUB_STEP_SUMMARY"
-          host() { sed -E 's#^https://##' <<<"$1"; }
-          # shellcheck disable=SC2329
           redirect() { [[ $(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 15 "http://$1/") =~ ^30[178]\ https:// ]]; }
           if [[ $COMPONENT == nabu-core ]]; then
-            # shellcheck disable=SC2329
             config_ok() { curl -fsS --max-time 15 "$api/api/v1/config" | jq -e --arg p "$NABU_AUTH_PROVIDER" '.authProvider == $p' >/dev/null; }
-            # shellcheck disable=SC2329
             jwks_ok() { curl -fsS --max-time 15 "$api/.well-known/jwks.json" | jq -e '.keys | length > 0' >/dev/null; }
-            # shellcheck disable=SC2329
             login_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/auth/login") == 302 ]]; }
-            # shellcheck disable=SC2329
             metrics_closed() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/metrics") != 200 ]]; }
-            # shellcheck disable=SC2329
             relay_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/v1/workspaces/connect") == 401 ]]; }
             check "GET $api/api/v1/config — вход $NABU_AUTH_PROVIDER" config_ok
             check "$api/.well-known/jwks.json — ключи подписи" jwks_ok
             check "$api/auth/login — редирект к провайдеру" login_ok
             check "$api/v1/workspaces/connect без токена — 401 (relay)" relay_ok
             check "$api/metrics закрыт" metrics_closed
-            check "http://$(host "$api") → HTTPS" redirect "$(host "$api")"
+            check "http://${api#https://} → HTTPS" redirect "${api#https://}"
             if [[ $first == true ]]; then
-              # shellcheck disable=SC2329
               admins_ok() { curl -fsS --max-time 15 "$api/api/v1/config" | jq -e '.bootstrapAdminsConfigured == true' >/dev/null; }
               check "первая установка: первые администраторы заданы" admins_ok
             fi
           else
-            # shellcheck disable=SC2329
             page_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code} %{content_type}' --max-time 15 "$web/") =~ ^200\ text/html ]]; }
-            # shellcheck disable=SC2329
             cfg_ok() { curl -fsS --max-time 15 "$web/config.json" | jq -e --arg a "$api" '.apiBaseUrl == $a' >/dev/null; }
-            # shellcheck disable=SC2329
             cors_ok() {
               curl -sS -D - -o /dev/null --max-time 15 -X OPTIONS "$api/api/v1/me" -H "Origin: $web" \
                 -H 'Access-Control-Request-Method: GET' | tr -d '\r' | grep -qi "^access-control-allow-origin: $web\$"
@@ -298,7 +287,7 @@ jobs:
             check "GET $web/ — 200 text/html" page_ok
             check "$web/config.json: apiBaseUrl = $api" cfg_ok
             check "CORS $api с Origin $web" cors_ok
-            check "http://$(host "$web") → HTTPS" redirect "$(host "$web")"
+            check "http://${web#https://} → HTTPS" redirect "${web#https://}"
           fi
           exit "$failed"
 
