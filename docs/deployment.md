@@ -94,3 +94,20 @@ of `/auth/login`, that `/metrics` is closed, the relay endpoint and the site.
 Open `https://nabu.<domain>`, sign in with GitHub as one of `NABU_BOOTSTRAP_ADMINS` and set up
 **Admin → Models** (or rely on `NABU_BOOTSTRAP_LLM_API_KEY`), the catalog and the clients. To connect
 Hammurapi see [hammurapi.md](hammurapi.md).
+
+## Watching agent pods
+
+Agent pods are described in [isolation.md](isolation.md); the Agents section of the administration
+shows the capacity, the warm reserve and the queue. The stand ships no alert rules for Nabu; these
+expressions are the ones to alert on:
+
+| What | Expression |
+| --- | --- |
+| Turns wait long for a pod | `histogram_quantile(0.95, sum by (le) (rate(nabu_agent_queue_wait_seconds_bucket[10m]))) > 60` for 10 minutes |
+| Pods start slowly | `histogram_quantile(0.95, sum by (le) (rate(nabu_agent_pod_start_seconds_bucket[10m]))) > 20` for 10 minutes |
+| Turns got no pod in time | `increase(nabu_agent_queue_expired_total[10m]) > 0` |
+| The pod manager is stuck | `time() - max(nabu_agent_manager_last_loop_timestamp_seconds) > 60` |
+
+`nabu_turn_first_token_seconds{start}` tells a cold start (`cold`) from a running pod (`hot`) and a
+session opened in a running pod (`warm`); `nabu_agent_pods_capacity{source}` shows the ceiling and
+where it comes from.

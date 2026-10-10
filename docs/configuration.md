@@ -84,6 +84,7 @@ Agent operator only (`agent`):
 | --- | --- | --- |
 | `AGENT_LISTEN_ADDR` | Listener of the operator | `:8090` |
 | `AGENT_MODE` | `pool` — runs of service agents and checks only; `owner` — the pod of one owner (set by `worker`); `all` — everything in one operator | `all` |
+| `AGENT_OWNER`, `AGENT_GENERATION`, `AGENT_JWT_PUBLIC_KEY` | Set by `worker` in the pod of an owner (`AGENT_MODE=owner`): whose pod it is, the number of this start and the public key its tokens are checked with. None is a secret | — |
 | `AGENT_MAX_SESSIONS`, `AGENT_MAX_RUNS` | Pi processes in total and, of them, runs of service agents | `100`, `10` |
 | `AGENT_WORKDIR` | Directories of sessions | `/work` |
 | `PI_BINARY`, `PI_EXTENSION_DIR` | Pi and the `nabu-workspace` extension (set in the release image) | `/usr/local/bin/pi`, `/opt/nabu/pi-extensions/nabu-workspace` |
