@@ -55,11 +55,35 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `BOOTSTRAP_LLM_API_KEY`, `BOOTSTRAP_LLM_BASE_URL`, `BOOTSTRAP_LLM_TYPE` | The first LLM connection, created once when there are none | —, `https://api.deepseek.com`, `deepseek` |
 | `WHISPER_URL` | Speech recognition for voice input | — (voice off) |
 
+Agent pods (`worker`; `api` reads `AGENT_EXECUTOR`). The agent of every user and group agent runs
+in its own pod — see [isolation.md](isolation.md):
+
+| Variable | Meaning | Default |
+| --- | --- | --- |
+| `AGENT_EXECUTOR` | `k8s` — a pod per owner; `local` — every session in the operator at `AGENT_ADDR` (development) | `local` |
+| `AGENT_NAMESPACE` | Namespace of agent pods | `nabu-agents` |
+| `AGENT_IMAGE` | Image of an agent pod | — (required with `k8s`) |
+| `AGENT_POD_CPU_REQUEST`, `AGENT_POD_CPU` | CPU request and limit of a pod | `100m`, `1` |
+| `AGENT_POD_MEMORY_REQUEST`, `AGENT_POD_MEMORY` | Memory request and limit of a pod | `256Mi`, `1Gi` |
+| `AGENT_POD_WORK` | Size of the working directory of a pod | `1GB` |
+| `AGENT_POD_MAX_SESSIONS` | Sessions in a pod | `8` |
+| `AGENT_POD_IDLE_TIMEOUT` | A pod without turns is stopped | `15m` |
+| `AGENT_POD_MIN_IDLE` | An idle pod may give its place away after this time | `60s` |
+| `AGENT_PODS_MAX` | Ceiling of pods; `0` — from the quota of the namespace, otherwise learned from the cluster | `0` |
+| `AGENT_START_PARALLEL` | Pods starting at the same time | `10` |
+| `AGENT_START_TIMEOUT` | A placed pod must become ready within this time | `60s` |
+| `AGENT_SCHEDULE_TIMEOUT` | A pod the cluster cannot place for this long sets the ceiling; raise it to the time a node takes to appear when nodes scale automatically | `15s` |
+| `AGENT_QUEUE_TIMEOUT` | Longest wait of a turn for a pod | `10m` |
+| `AGENT_WARM_WINDOW` | Activity window of the warm reserve | `3h` |
+| `AGENT_WARM_SHARE` | Share of the ceiling kept warm for the most active owners | `0.3` |
+| `AGENT_WARM_MAX` | Limit of the warm reserve; `0` — none | `0` |
+
 Agent operator only (`agent`):
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `AGENT_LISTEN_ADDR` | Listener of the operator | `:8090` |
+| `AGENT_MODE` | `pool` — runs of service agents and checks only; `owner` — the pod of one owner (set by `worker`); `all` — everything in one operator | `all` |
 | `AGENT_MAX_SESSIONS`, `AGENT_MAX_RUNS` | Pi processes in total and, of them, runs of service agents | `100`, `10` |
 | `AGENT_WORKDIR` | Directories of sessions | `/work` |
 | `PI_BINARY`, `PI_EXTENSION_DIR` | Pi and the `nabu-workspace` extension (set in the release image) | `/usr/local/bin/pi`, `/opt/nabu/pi-extensions/nabu-workspace` |

@@ -1,7 +1,7 @@
 # Deployment
 
-Nabu runs on the Hammurapi stand: the same minikube machine, the namespaces `nabu` and
-`nabu-sandboxes`, the stand's Postgres (CloudNativePG), Kafka (Strimzi) and S3 (SeaweedFS) with a
+Nabu runs on the Hammurapi stand: the same minikube machine, the namespaces `nabu`,
+`nabu-sandboxes` and `nabu-agents` (a pod per user's agent), the stand's Postgres (CloudNativePG), Kafka (Strimzi) and S3 (SeaweedFS) with a
 separate database, bucket and topic prefix. It is deployed exactly like Hammurapi: the charts
 `nabu-core`, `nabu-web` and the script `bin/nabu-deploy` live in `hammurapi-infra` next to those of
 Hammurapi, and this repository holds only the docs and the reusable deploy workflow. A tag of this
@@ -71,7 +71,8 @@ appear in command arguments, files or logs.
 ## What `nabu-deploy` does
 
 1. Checks the stand (`hammurapi-infra.sh status`), takes a lock.
-2. Creates the namespaces `nabu` and `nabu-sandboxes`, the pull secret `ghcr-pull`.
+2. Creates the namespaces `nabu`, `nabu-sandboxes` and `nabu-agents` (with the `restricted` pod
+   security level), the pull secret `ghcr-pull` in each.
 3. Writes `nabu-config` (ConfigMap) and `nabu-secrets` (Secret); keeps `AGENT_SERVICE_TOKEN` and
    `TELEGRAM_WEBHOOK_SECRET` across releases; checks the fingerprint of `SECRETS_KEY`.
 4. Creates the role and the database `nabu` in the stand's Postgres (through the primary pod, the

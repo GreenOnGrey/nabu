@@ -1,8 +1,8 @@
 # Isolation of personal agents
 
 How Nabu keeps the data and the actions of one user apart from another. Isolation is layered: every
-layer ties data and actions to one user and does not trust its neighbours. The weakest point is the
-agent pod, where the processes of all users run side by side — see [Limits](#limits).
+layer ties data and actions to one user and does not trust its neighbours. What stays shared is
+listed in [Limits](#limits).
 
 ## Data
 
@@ -14,10 +14,31 @@ agent pod, where the processes of all users run side by side — see [Limits](#l
 - **Group agents** own their data through a separate technical account, so they see neither the
   memory nor the files of the members.
 
+## The agent pod
+
+- **A pod per owner.** The agent of every user and of every group agent runs in a pod of its own in
+  the namespace `nabu-agents`: its conversations, topics and runs of scheduled tasks, and nothing of
+  anybody else. `worker` creates the pod with the first message and deletes it after
+  `AGENT_POD_IDLE_TIMEOUT` without turns.
+- **The pod is disposable.** A snapshot of the session goes to S3 after every turn, so a deleted or
+  lost pod loses nothing but a turn in flight.
+- **No secret and no rights in the pod.** Not root, a read-only root file system, all capabilities
+  dropped, no Kubernetes service account token, limits of CPU, memory and disk. The environment
+  holds only the id of the owner, the number of this start of the pod and the public key of Nabu.
+- **A token per pod.** `worker` signs every request with a five-minute token for this owner and this
+  start of the pod. The pod refuses any other token, so a request sent to an address that now
+  belongs to another pod never runs there. No shared secret opens all pods.
+- **Network policy.** Incoming connections come only from `worker`. Outgoing ones go only to DNS,
+  the internal API of Nabu, `relay`, port 443 on the internet (model providers) and the addresses in
+  `agents.egressAllow`. Agent pods do not see each other.
+- **Service agents** run in a shared pool, the Deployment `agent`: their runs are short and keep no
+  data of users between runs.
+
 ## The agent session
 
-- **One Pi process per conversation.** It has its own directory `sessions/<id>` and an environment
-  built from scratch: nothing of the operator's environment is inherited.
+- **One Pi process per conversation** inside the pod of its owner. It has its own directory
+  `sessions/<id>` and an environment built from scratch: nothing of the operator's environment is
+  inherited.
 - **Pi has no files or shell of its own.** Its tools `read`, `write`, `edit`, `bash`, `grep`, `find`
   and `ls` are routed to the sandbox of the user through `relay`. Commands run in the sandbox, not in
   the agent pod. A session without a workspace gets none of these tools.
@@ -52,12 +73,16 @@ agent pod, where the processes of all users run side by side — see [Limits](#l
 
 ## Limits
 
-- **The shared agent pod.** The Pi processes of all users run in one pod `agent` under one system
-  user. Only directories and environments separate them — not a kernel boundary and not a container.
-  The model cannot run code there, because the shell is routed to the sandbox, but a vulnerability in
-  Pi or in an extension would expose the tokens of neighbouring sessions.
-- **Shared LLM connections.** A model key belongs to a connection, not to a user; users are told
-  apart only in the usage report.
+- **Shared LLM connections.** A model key belongs to a connection, not to a user, and it is passed
+  to the pod of every user of that model; users are told apart only in the usage report. The model
+  cannot run code in the agent pod, because the shell is routed to the sandbox, but a vulnerability
+  in Pi or in an extension would expose the key.
+- **Internet on port 443.** The network policy of agent pods cannot tell a model provider from any
+  other site.
+- **The pool of service agents.** Runs of all service agents share the pod `agent`.
+- **Without pods of owners.** With `agents.enabled: false` (`AGENT_EXECUTOR=local`) every session
+  runs in the shared operator under one system user, separated only by directories and
+  environments. This mode is for development.
 - **Platform MCP items.** Items in the platform mode use one key for everybody: what a user can see
   there is decided by the external system, not by Nabu.
 - **Audit and administrators.** A platform administrator sees the audit of tool calls of every user;
