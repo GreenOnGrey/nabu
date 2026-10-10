@@ -85,4 +85,5 @@ Sign-in is GitHub restricted to an organization (or any OIDC provider). See
 - [Deployment](docs/deployment.md) — the stand, organization variables and secrets, the GitHub OAuth App, releases
 - [Configuration](docs/configuration.md) — every environment variable of `nabu-core`
 - [Channels and accounts](docs/channels.md) — mail, VK Teams, Telegram, group chats, archiving and restoring
+- [Isolation of personal agents](docs/isolation.md) — how the data and actions of users are kept apart, and the limits
 - [Connecting Hammurapi](docs/hammurapi.md) — the client, the catalog item and service agents for Hammurapi

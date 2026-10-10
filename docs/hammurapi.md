@@ -58,6 +58,10 @@ the next release of `hammurapi-core` is deployed without the built-in agent oper
 | Access | personal, kind `delegation`, audience `hammurapi` |
 | Read only | off — otherwise the agent sees only reading tools and cannot create issues |
 
+The **Read only** switch is in the form for both access modes. With it on, Nabu offers the agent the
+tools Hammurapi marks as read-only and allows calls only to those marked so at the last **Check** of
+the item: check the item again after an upgrade of Hammurapi that changes its tools.
+
 Nabu calls it with its own JWT (audience `hammurapi`, issuer `https://nabu-api.<domain>`) and
 `Nabu-On-Behalf-Of: <email>`. Hammurapi checks the signature by the JWKS of Nabu and applies the
 rights of that user; a user unknown to Hammurapi is created without roles. Users enable the item in
