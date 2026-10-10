@@ -56,6 +56,7 @@ the next release of `hammurapi-core` is deployed without the built-in agent oper
 | Name | `hammurapi` |
 | URL | `https://hammurapi-api.<domain>/mcp/nabu` |
 | Access | personal, kind `delegation`, audience `hammurapi` |
+| Read only | off — otherwise the agent sees only reading tools and cannot create issues |
 
 Nabu calls it with its own JWT (audience `hammurapi`, issuer `https://nabu-api.<domain>`) and
 `Nabu-On-Behalf-Of: <email>`. Hammurapi checks the signature by the JWKS of Nabu and applies the

@@ -84,8 +84,15 @@ Agent operator only (`agent`):
 | `TASK_TICK`, `TASK_RUN_TIMEOUT` | Scheduler tick and the longest run of a task | `15s`, `30m` |
 | `TASK_MIN_INTERVAL`, `TASK_MAX_ACTIVE`, `TASK_MAX_FAILURES` | Limits of recurring tasks per user | `15m`, `20`, `3` |
 | `TASK_CATCHUP_WINDOW` | After downtime only the last missed run within this window is executed | `1h` |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | Telegram channel (webhook `/hooks/v1/telegram/<secret>`) | — |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | The first configuration of the Telegram channel: copied into the channel once, later the channel is managed in **Admin → Channels** | — |
 | `TELEGRAM_API_URL` | Bot API | `https://api.telegram.org` |
+| `TG_TABLE_MAX_COLS` | Tables wider than this go to Telegram as a code block | `8` |
+| `KEY_PEPPER` | HMAC key of the personal Telegram keys; empty — derived from `SECRETS_KEY` | — |
+| `EMAIL_REPLY_LIMIT_PER_HOUR` | Letters of the bot to one address per hour | `20` |
+| `EMAIL_ATTACH_MAX` | Total size of files attached to an answer; the rest go as links | `10MB` |
+| `EMAIL_INBOUND_MAX` | Total size of attachments accepted from a letter | `25MB` |
+| `CONFIRMATION_TTL` | How long a held action waits for the confirmation of the user | `24h` |
+| `PURGE_SCHEDULE` | Cron of the purge of archived accounts (time zone `DEFAULT_TIMEZONE`) | `30 3 * * *` |
 | `AUDIT_RETENTION` | Audit partitions older than this are dropped | `365d` |
 | `TOPIC_ARCHIVE_AFTER` | Idle topic conversations are archived | `14d` |
 | `UPLOAD_MAX_BYTES` | Largest attachment | `50MB` |
@@ -97,4 +104,8 @@ Agent operator only (`agent`):
 | `LOG_LEVEL` | `debug`, `info`, `warn`, `error` | `info` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Traces | — |
 
-Metrics are served on `SERVICE_ADDR` at `/metrics`; health at `/healthz` and `/readyz`.
+Metrics are served on `SERVICE_ADDR` at `/metrics`; health at `/healthz` and `/readyz`. Channels and
+accounts add `nabu_channel_inbound_total`, `nabu_channel_outbound_total`,
+`nabu_email_auth_rejected_total`, `nabu_imap_connected`, `nabu_vkteams_poll_lag_seconds`,
+`nabu_pending_confirmations`, `nabu_users{status}` and `nabu_purge_deleted_total`. Alert when
+`nabu_imap_connected` is 0 for 5 minutes while the mail channel is enabled and when rejected letters grow.

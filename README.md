@@ -27,7 +27,8 @@ sibling repositories:
 As for Hammurapi, the charts `nabu-core`, `nabu-web` and the deploy script `bin/nabu-deploy` live in
 `hammurapi-infra`, the repository of the stand.
 
-The specification is `FTR.NAB.CMN-0001` in [`hammurapi-specs`](../hammurapi-specs/specs/NAB/CMN/FTR.NAB.CMN-0001).
+The specifications are `FTR.NAB.CMN-0001` and `FTR.NAB.CMN-0002` (channels and accounts) in
+[`hammurapi-specs`](../hammurapi-specs/specs/NAB/CMN).
 
 ## Features
 
@@ -39,8 +40,13 @@ The specification is `FTR.NAB.CMN-0001` in [`hammurapi-specs`](../hammurapi-spec
 - **Tasks** — one-off and recurring tasks of the personal agent; the result lands in the main conversation.
 - **Connections** — a catalog of MCP servers and skills; personal credentials (OAuth or tokens) or
   platform ones; read-only items expose only reading tools.
-- **Channels** — the web, Telegram (linked by a one-time code) and products through delegation
-  (`Nabu-On-Behalf-Of`), for example the chat of Hammurapi.
+- **Channels** — the web, mail (threads become topics), VK Teams, Telegram (linked by a personal
+  key) and products through delegation (`Nabu-On-Behalf-Of`), for example the chat of Hammurapi;
+  administrators open each channel to everybody or to chosen users.
+- **Group agents** — the bot in a Telegram or VK Teams group is a separate agent of the chat with its
+  own memory and space and platform connections only.
+- **Accounts** — an employee who leaves is archived, not deleted: the data are kept for the retention
+  and return on restoring; an API for HR systems.
 - **Service agents** — agents with their own instructions, models, tools and limits, started by clients
   through `/client/v1/agents/{name}/runs`; an external workspace (the client's runner) connects over the
   `relay` WebSocket channel, so it needs no inbound port.
@@ -78,4 +84,5 @@ Sign-in is GitHub restricted to an organization (or any OIDC provider). See
 
 - [Deployment](docs/deployment.md) — the stand, organization variables and secrets, the GitHub OAuth App, releases
 - [Configuration](docs/configuration.md) — every environment variable of `nabu-core`
+- [Channels and accounts](docs/channels.md) — mail, VK Teams, Telegram, group chats, archiving and restoring
 - [Connecting Hammurapi](docs/hammurapi.md) — the client, the catalog item and service agents for Hammurapi
