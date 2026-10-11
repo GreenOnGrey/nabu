@@ -109,6 +109,13 @@ Agent operator only (`agent`):
 | `TASK_TICK`, `TASK_RUN_TIMEOUT` | Scheduler tick and the longest run of a task | `15s`, `30m` |
 | `TASK_MIN_INTERVAL`, `TASK_MAX_ACTIVE`, `TASK_MAX_FAILURES` | Limits of recurring tasks per user | `15m`, `20`, `3` |
 | `TASK_CATCHUP_WINDOW` | After downtime only the last missed run within this window is executed | `1h` |
+| `MEMORY_GRAPH_MAX_NODES` | The most linked people and topics the graph of communications returns (FTR.NAB.CMN-0003) | `150` |
+| `MEMORY_COLLECT_CONCURRENCY`, `MEMORY_BATCH_THREADS` | Runs of the collector of communications at a time; threads in a batch of one run | `40`, `20` |
+| `MEMORY_RUN_TIMEOUT`, `MEMORY_BACKFILL_DAYS` | The longest run of the collector; the depth of the first collection | `10m`, `30` |
+| `MEMORY_HOUSEKEEPING_EVERY` | How often paused collections are checked: the access to a source is back, the monthly limit allows | `10m` |
+| `MEMORY_BACKFILL_POOL_SHARE`, `MEMORY_EMBED_BATCH` | The share of concurrent runs a first collection may take; notes per request of embeddings | `0.3`, `64` |
+| `MEMORY_GMAIL_OVERLAP` | How far before its cursor the Gmail adapter searches; what is already collected is told apart by message ids | `24h` |
+| `MEMORY_AGENT_ADDR` | The pool of the collector agent (`agent-memory`); empty — the common pool `AGENT_ADDR` | — |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | The first configuration of the Telegram channel: copied into the channel once, later the channel is managed in **Admin → Channels** | — |
 | `TELEGRAM_API_URL` | Bot API | `https://api.telegram.org` |
 | `TG_TABLE_MAX_COLS` | Tables wider than this go to Telegram as a code block | `8` |
