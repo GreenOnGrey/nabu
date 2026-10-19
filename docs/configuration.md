@@ -53,7 +53,10 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `INBOUND_WORKERS` | Turns processed in parallel by one `worker` | `4` |
 | `RUN_WORKSPACE_WAIT` | How long a run of a service agent waits for its external workspace | `120s` |
 | `BOOTSTRAP_LLM_API_KEY`, `BOOTSTRAP_LLM_BASE_URL`, `BOOTSTRAP_LLM_TYPE` | The first LLM connection, created once when there are none | —, `https://api.deepseek.com`, `deepseek` |
-| `WHISPER_URL` | Speech recognition for voice input | — (voice off) |
+| `WHISPER_URL` | Speech recognition for voice input on the site and voice messages of messengers (FTR.NAB.CHAT-0001 R19–R21); the stand sets it with `NABU_WHISPER` | — (voice off) |
+| `TRANSCRIBE_MAX_SECONDS` | The longest voice recording; a longer one is refused (`transcription_too_long`) | `300` |
+| `GIGACHAT_CA_FILE` | A PEM file added to the trusted roots of GigaChat; the Russian Trusted Root CA is built in | — |
+| `MODELS_REFRESH_CRON` | Cron of the daily refresh of the models of connections: new models are marked, gone ones too (FTR.NAB.CHAT-0001 R10) | `17 4 * * *` |
 
 Agent pods (`worker`; `api` reads `AGENT_EXECUTOR`). The agent of every user and group agent runs
 in its own pod — see [isolation.md](isolation.md):
