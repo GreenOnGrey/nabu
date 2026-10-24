@@ -104,6 +104,27 @@ Agent operator only (`agent`):
 | `SPACE_QUOTA` | Size of a user's space | `5GB` |
 | `SANDBOX_EGRESS_ALLOW` | CIDRs sandboxes may connect to | — |
 | `SANDBOX_EXCLUDE` | Extra patterns not synced to S3 (besides `node_modules/`, `.venv/`, `__pycache__/`, `*.tmp`) | — |
+| `SANDBOX_PROFILES` | Built-in sandbox profiles, `name=image` pairs (FTR.NAB.CMN-0008): `base=ghcr.io/greenongrey/nabu-sandbox-base:<version>,documents=…`. Empty — one profile `base` with `SANDBOX_IMAGE`, without the init container | — |
+| `SANDBOX_DEFAULTS` | Default profiles of `personal`, `group` and `service` agents, `target=profile` pairs; the administration overrides personal and group | `personal=base,group=base,service=base` |
+| `SANDBOX_INIT_IMAGE` | Image of the init container that puts the `nabu` binary and the profile manifest into `/nabu` of a sandbox | `AGENT_IMAGE` |
+| `SANDBOX_CUSTOM_IMAGES` | Lets administrators add profiles from custom images | `false` |
+| `SANDBOX_IMAGE_PREFIXES` | Allowed prefixes of custom images, each ending with `/` (required with `SANDBOX_CUSTOM_IMAGES`) | — |
+| `SANDBOX_PULL_SECRETS` | `imagePullSecrets` of sandboxes, probe pods and the `sandbox-prepull` DaemonSet | `ghcr-pull` |
+| `SANDBOX_PROBE_TIMEOUT` | How long the check of a custom image may take, the pull included | `5m` |
+
+## Previews of office files
+
+FTR.NAB.CHAT-0003: documents and presentations open in the preview of the site as PDF, spreadsheets as sheets. The
+stand creates the secret `nabu-docs-preview` with these variables when the service of documents is on (`MCP_DOCGEN`);
+without them office files stay download tiles.
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `PREVIEW_CONVERT_URL`, `PREVIEW_CONVERT_USER`, `PREVIEW_CONVERT_PASSWORD` | Gotenberg of `doc-convert` (LibreOffice) and its basic auth | — |
+| `PREVIEW_LEGACY_URL` | The `legacy` sidecar of `doc-convert`: XLS and ODS → XLSX | — |
+| `PREVIEW_DOCGEN_URL`, `PREVIEW_DOCGEN_KEY` | `docgen`: the sheets of a workbook | — |
+| `PREVIEW_MAX_BYTES` | Largest file with a preview | `25MB` |
+| `PREVIEW_PARALLEL` | Conversions at a time per `api` pod | `2` |
 
 ## Tasks, channels, retention
 
