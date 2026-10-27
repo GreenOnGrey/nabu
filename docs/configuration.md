@@ -50,6 +50,14 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `AGENT_SERVICE_TOKEN` | Shared token of `api`, `worker` and `agent` | — (required for `worker`, `agent`) |
 | `AGENT_IDLE_TIMEOUT` | An idle session is saved to S3 and closed | `15m` |
 | `TURN_TIMEOUT` | Longest turn of the agent | `30m` |
+| `CHAT_QUEUE_MAX` | Messages that may wait in a conversation while the agent answers (FTR.NAB.CHAT-0004); one more is refused (`queue_full`) | `10` |
+| `SUBAGENTS_ENABLED` | Agents may start subagents with the tool `subagent` (FTR.NAB.CMN-0009) | `true` |
+| `SUBAGENT_MAX_PARALLEL` | Tasks of one call of `subagent` | `4` |
+| `SUBAGENT_MAX_PER_TURN` | Subagents of one turn | `8` |
+| `SUBAGENT_TIMEOUT` | Longest task of a subagent (and never past the end of the turn) | `15m` |
+| `SUBAGENT_RESULT_CHARS` | The result of a subagent the agent gets back; a longer one is cut | `16000` |
+| `SUBAGENT_SLOT_WAIT` | How long a call waits for a free place in the pod of the agent | `1m` |
+| `AGENT_SUBAGENT_ADDR` | `agent`: the loopback address where the Pi sessions of the pod start subagents; empty — no subagents | `127.0.0.1:8091` |
 | `INBOUND_WORKERS` | Turns processed in parallel by one `worker` | `4` |
 | `RUN_WORKSPACE_WAIT` | How long a run of a service agent waits for its external workspace | `120s` |
 | `BOOTSTRAP_LLM_API_KEY`, `BOOTSTRAP_LLM_BASE_URL`, `BOOTSTRAP_LLM_TYPE` | The first LLM connection, created once when there are none | —, `https://api.deepseek.com`, `deepseek` |
