@@ -33,6 +33,7 @@ The client secret is shown once. Put it into the organization secrets used by th
 | `HAMMURAPI_NABU_URL` (variable) | `https://nabu-api.<domain>` |
 | `HAMMURAPI_NABU_CLIENT_ID` (variable) | the client id |
 | `HAMMURAPI_NABU_CLIENT_SECRET` (secret) | the client secret |
+| `NABU_WEB_URL` (variable, optional) | `https://nabu.<domain>`: a code task links to the service agents of Nabu |
 
 Then release (or redeploy) `hammurapi-core`. Users of Hammurapi and Nabu are matched by email, so both
 should sign in through the same GitHub organization or the same OIDC provider.
