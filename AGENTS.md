@@ -26,6 +26,14 @@ A tag of this repository does not touch the machine: it is only a version of `de
 Every change that adds a setting or behaviour visible to operators updates `docs/`
 (configuration.md lists every environment variable).
 
+## Checks before a commit
+
+A change is ready when every job of `.github/workflows/checks.yml` passes locally at the versions the workflow pins, plus the
+matching lines below. Read the workflow for the exact commands. Install a missing tool outside the repository
+at the pinned version. Name any job you could not run in your report, with the reason.
+
+- `deploy-component.yml`: its post-deploy checks describe the charts of `hammurapi-infra`; compare them with the routes of the chart version being released, and tag this repository before bumping `DEPLOY_WORKFLOW_REF`.
+
 ## Rules
 
 - Configuration and secrets reach the machine as one JSON on the stdin of SSH, built by `jq` from
