@@ -1,13 +1,16 @@
 # Connecting Hammurapi
 
-Hammurapi uses Nabu in two ways (`FTR.HMR.CMN-0006`):
+Hammurapi works only with Nabu (`FTR.HMR.CMN-0006`, `FTR.HMR.CMN-0007`): it has no agent of its own and
+does not start without the client of Nabu. It uses Nabu in two ways:
 
 - **the chat** in Hammurapi is a window to the user's personal agent in Nabu — the same main
   conversation, topics and memory; Hammurapi calls `/client/v1/me/*` with `Nabu-On-Behalf-Of: <email>`;
 - **the scenarios of the cycle** (issue analysis, gate generation, conformance check, code generation,
   review updates, rollback reverts) run on service agents of Nabu that Hammurapi starts through
-  `/client/v1/agents/{name}/runs`. Code generation runs with the Hammurapi runner as an external
-  workspace connected to `relay`.
+  `/client/v1/agents/{name}/runs`. The code scenarios run in a temporary sandbox of Nabu: Hammurapi
+  uploads the working copy of the branch (`PUT /client/v1/uploads/{id}`), the agent changes the files,
+  Hammurapi takes the changes (`GET /client/v1/runs/{id}/changes`), commits them and opens the PR.
+  The sandbox has no git credentials.
 
 The personal agent, in turn, calls the MCP of Hammurapi on behalf of the user (reading, creating
 issues).
@@ -21,8 +24,7 @@ issues).
 | Name | `hammurapi` |
 | URL | `https://hammurapi.<domain>` |
 | Delegation | on — the chat acts for users by email |
-| Import | on — for the transfer of the agent settings |
-| Service agents | the agents Hammurapi may start (after the transfer: `hammurapi-issue-analysis`, `hammurapi-gate-generation`, `hammurapi-conformance-check`, `hammurapi-codegen`, `hammurapi-review-update`, `hammurapi-rollback-revert`) |
+| Service agents | the agents Hammurapi may start, one per scenario or shared: issue analysis, gate generation, conformance check, code generation, review update, rollback revert |
 
 The client secret is shown once. Put it into the organization secrets used by the Hammurapi deploy:
 
@@ -35,17 +37,15 @@ The client secret is shown once. Put it into the organization secrets used by th
 Then release (or redeploy) `hammurapi-core`. Users of Hammurapi and Nabu are matched by email, so both
 should sign in through the same GitHub organization or the same OIDC provider.
 
-## 2. Transfer of the agent settings
+## 2. Service agents of the scenarios
 
-In Hammurapi, **Admin → Nabu → Transfer to Nabu** moves the LLM connections with keys, the models of
-scenarios, the MCP servers and the skills source of Hammurapi into Nabu
-(`POST /client/v1/import/hammurapi-agent`) and creates the service agents `hammurapi-<scenario>`.
-Hammurapi binds its scenarios to them; a repeated transfer updates the same objects. Allow the new
-agents to the client (step 1) if they are not allowed yet, and check the binding table in
-**Admin → Nabu**.
+Create the service agents in **Admin → Service agents** and allow them to the client (step 1). In
+Hammurapi, **Admin → Nabu** binds each scenario to an agent; an unbound scenario does not run.
 
-When every scenario runs in Nabu, set the organization variable `HAMMURAPI_AGENT_OPERATOR=false`:
-the next release of `hammurapi-core` is deployed without the built-in agent operator.
+The agents of the code scenarios (code generation, review update, rollback revert) need the
+workspace **Nabu sandbox**, the profile `code` (Go, Python, JavaScript) and the proxy
+**Package registries** (`packages`): **Admin → Sandbox images → Proxies** sets the registries and
+their tokens; the sandbox reaches only the addresses of its proxies through the egress gateway.
 
 ## 3. Hammurapi as a tool of personal agents
 
@@ -70,6 +70,5 @@ rights of that user; a user unknown to Hammurapi is created without roles. Users
 ## Network
 
 On the stand both run in one cluster. Service agents reach the MCP of the Hammurapi worker
-(`worker-mcp.hammurapi.svc:8083`, allowed from the namespace `nabu`) and the internal server of
-Hammurapi `api` (`api-internal.hammurapi.svc:8081`) with per-run tokens. The Hammurapi runner connects
-to `wss://nabu-api.<domain>/v1/workspaces/connect`; it needs no inbound port.
+(`worker-mcp.hammurapi.svc:8083`, allowed from the namespace `nabu`) with per-run tokens. Temporary
+sandboxes reach the internet only through `nabu-egress:3128` and only the addresses of their proxies.

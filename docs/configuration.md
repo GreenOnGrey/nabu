@@ -18,7 +18,8 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `RELAY_ADDR` | Listener of `relay` | `:8085` |
 | `RELAY_INTERNAL_URL` | `relay` as `agent` reaches it | `http://localhost:8085` |
 | `RELAY_SANDBOX_WS_URL` | `relay` as sandboxes reach it | from `RELAY_INTERNAL_URL` |
-| `RELAY_PUBLIC_WS_URL` | `relay` as external workspaces (runners of clients) reach it | `wss://<PUBLIC_API_URL>/v1/workspaces/connect` |
+| `EGRESS_URL` | The egress gateway as sandboxes reach it (`http://nabu-egress:3128`); empty — sandboxes get no proxies (FTR.HMR.CMN-0007) | — |
+| `EGRESS_LISTEN` | Listener of `egress` | `:3128` |
 
 ## Sign-in
 
@@ -59,7 +60,6 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `SUBAGENT_SLOT_WAIT` | How long a call waits for a free place in the pod of the agent | `1m` |
 | `AGENT_SUBAGENT_ADDR` | `agent`: the loopback address where the Pi sessions of the pod start subagents; empty — no subagents | `127.0.0.1:8091` |
 | `INBOUND_WORKERS` | Turns processed in parallel by one `worker` | `4` |
-| `RUN_WORKSPACE_WAIT` | How long a run of a service agent waits for its external workspace | `120s` |
 | `BOOTSTRAP_LLM_API_KEY`, `BOOTSTRAP_LLM_BASE_URL`, `BOOTSTRAP_LLM_TYPE` | The first LLM connection, created once when there are none | —, `https://api.deepseek.com`, `deepseek` |
 | `WHISPER_URL` | Speech recognition for voice input on the site and voice messages of messengers (FTR.NAB.CHAT-0001 R19–R21); the stand sets it with `NABU_WHISPER` | — (voice off) |
 | `TRANSCRIBE_MAX_SECONDS` | The longest voice recording; a longer one is refused (`transcription_too_long`) | `300` |
@@ -119,6 +119,18 @@ Agent operator only (`agent`):
 | `SANDBOX_IMAGE_PREFIXES` | Allowed prefixes of custom images, each ending with `/` (required with `SANDBOX_CUSTOM_IMAGES`) | — |
 | `SANDBOX_PULL_SECRETS` | `imagePullSecrets` of sandboxes, probe pods and the `sandbox-prepull` DaemonSet | `ghcr-pull` |
 | `SANDBOX_PROBE_TIMEOUT` | How long the check of a custom image may take, the pull included | `5m` |
+
+## Working copies of runs (FTR.HMR.CMN-0007)
+
+A client uploads a working copy (`PUT /client/v1/uploads/{id}`), a service agent with the sandbox of
+Nabu changes it in a temporary sandbox, the client takes the changes (`GET /client/v1/runs/{id}/changes`).
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `RUN_FILES_MAX_FILES`, `RUN_FILES_MAX_BYTES` | Limits of a working copy: files and unpacked bytes; over them — `413 workspace_too_large` | `5000`, `200MB` |
+| `RUN_FILES_UPLOAD_TTL` | An upload no run took is deleted after it | `1h` |
+| `RUN_FILES_KEEP` | The copy and the changes of a run are kept after it ends | `24h` |
+| `RUN_CHANGES_TIMEOUT` | How long the sandbox may take to collect and upload the changes after the agent | `2m` |
 
 ## Previews of office files
 

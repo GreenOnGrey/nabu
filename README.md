@@ -48,8 +48,10 @@ The specifications are `FTR.NAB.CMN-0001` and `FTR.NAB.CMN-0002` (channels and a
 - **Accounts** — an employee who leaves is archived, not deleted: the data are kept for the retention
   and return on restoring; an API for HR systems.
 - **Service agents** — agents with their own instructions, models, tools and limits, started by clients
-  through `/client/v1/agents/{name}/runs`; an external workspace (the client's runner) connects over the
-  `relay` WebSocket channel, so it needs no inbound port.
+  through `/client/v1/agents/{name}/runs`; with the sandbox of Nabu a run can take a working copy of
+  the client and give back the changed files (FTR.HMR.CMN-0007).
+- **Proxies of sandboxes** — named exits of sandboxes to package registries and other addresses
+  through the egress gateway, given to service, personal and group agents.
 - **Administration** — users, models and connections to LLMs, the harness (system prompt, tools), the
   catalog, service agents, API clients, usage and audit.
 
