@@ -268,11 +268,13 @@ jobs:
             jwks_ok() { curl -fsS --max-time 15 "$api/.well-known/jwks.json" | jq -e '.keys | length > 0' >/dev/null; }
             login_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/auth/login") == 302 ]]; }
             metrics_closed() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/metrics") != 200 ]]; }
-            relay_ok() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/v1/workspaces/connect") == 401 ]]; }
+            # FTR.HMR.CMN-0007 R12: внешних рабочих пространств нет — канал relay
+            # снаружи закрыт, песочницы подключаются к нему внутри кластера.
+            relay_closed() { [[ $(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$api/v1/workspaces/connect") == 404 ]]; }
             check "GET $api/api/v1/config — вход $NABU_AUTH_PROVIDER" config_ok
             check "$api/.well-known/jwks.json — ключи подписи" jwks_ok
             check "$api/auth/login — редирект к провайдеру" login_ok
-            check "$api/v1/workspaces/connect без токена — 401 (relay)" relay_ok
+            check "$api/v1/workspaces/connect закрыт снаружи — 404 (relay)" relay_closed
             check "$api/metrics закрыт" metrics_closed
             check "http://${api#https://} → HTTPS" redirect "${api#https://}"
             if [[ $first == true ]]; then
