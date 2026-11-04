@@ -4,7 +4,8 @@ Hammurapi works only with Nabu (`FTR.HMR.CMN-0006`, `FTR.HMR.CMN-0007`): it has 
 does not start without the client of Nabu. It uses Nabu in two ways:
 
 - **the chat** in Hammurapi is a window to the user's personal agent in Nabu — the same main
-  conversation, topics and memory; Hammurapi calls `/client/v1/me/*` with `Nabu-On-Behalf-Of: <email>`;
+  conversation, topics, memory and files with their previews; Hammurapi calls `/client/v1/me/*` with
+  `Nabu-On-Behalf-Of: <email>`;
 - **the scenarios of the cycle** (issue analysis, gate generation, conformance check, code generation,
   review updates, rollback reverts) run on service agents of Nabu that Hammurapi starts through
   `/client/v1/agents/{name}/runs`. The code scenarios run in a temporary sandbox of Nabu: Hammurapi
