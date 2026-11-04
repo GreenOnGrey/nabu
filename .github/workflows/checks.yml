@@ -1,5 +1,5 @@
 # Проверки на каждый PR: actionlint и сборка payload выкатки. Чарты Nabu и
-# bin/nabu-deploy живут в hammurapi-infra и проверяются там.
+# bin/nabu-deploy живут в installer и проверяются там.
 name: checks
 on:
   pull_request:

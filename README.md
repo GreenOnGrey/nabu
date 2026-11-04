@@ -25,7 +25,7 @@ sibling repositories:
 | `nabu` (this one) | Docs and the reusable deploy workflow (`deploy-component.yml`) |
 
 As for Hammurapi, the charts `nabu-core`, `nabu-web` and the deploy script `bin/nabu-deploy` live in
-`hammurapi-infra`, the repository of the stand.
+`installer`, the repository of the stand.
 
 The specifications are `FTR.NAB.CMN-0001` and `FTR.NAB.CMN-0002` (channels and accounts) in
 [`hammurapi-specs`](../hammurapi-specs/specs/NAB/CMN).
@@ -78,7 +78,7 @@ agent operator, one process per session; tools that touch files go to the worksp
 On the Hammurapi stand Nabu is deployed into the same minikube, namespaces `nabu` and
 `nabu-sandboxes`, by GitHub Actions: a tag `vX.Y.Z` of `nabu-core` or `nabu-web` builds and signs the
 image and calls `deploy-component.yml` of this repository, which runs `bin/nabu-deploy` of
-`hammurapi-infra` on the machine.
+`installer` on the machine.
 Sign-in is GitHub restricted to an organization (or any OIDC provider). See
 [docs/deployment.md](docs/deployment.md) and [docs/configuration.md](docs/configuration.md).
 
