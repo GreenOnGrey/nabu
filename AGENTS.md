@@ -33,6 +33,7 @@ matching lines below. Read the workflow for the exact commands. Install a missin
 at the pinned version. Name any job you could not run in your report, with the reason.
 
 - `deploy-component.yml`: its post-deploy checks describe the charts of `hammurapi-infra`; compare them with the routes of the chart version being released, and tag this repository before bumping `DEPLOY_WORKFLOW_REF`.
+- Always, after the checks pass: run the `code-review` skill on the diff to be committed. Fix each finding, or name it in your report with the reason it stays. Ask the user when you doubt a finding.
 
 ## Rules
 
