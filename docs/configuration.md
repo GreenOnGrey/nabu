@@ -53,6 +53,10 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `TURN_TIMEOUT` | Longest turn of the agent | `30m` |
 | `CHAT_QUEUE_MAX` | Messages that may wait in a conversation while the agent answers (FTR.NAB.CHAT-0004); one more is refused (`queue_full`) | `10` |
 | `SUBAGENTS_ENABLED` | Agents may start subagents with the tool `subagent` (FTR.NAB.CMN-0009) | `true` |
+| `STALL_DETECTOR_ENABLED` | Stop turns that repeat one action with no result (`FTR.NAB.CMN-0010`) | `true` |
+| `STALL_REPEAT_LIMIT` | Identical calls with an identical result in a row that stop a turn | `5` |
+| `STALL_ERROR_LIMIT` | Failed tool calls in a row that stop a turn | `5` |
+| `STALL_WRAPUP_TIMEOUT` | Time of the final request of a stopped turn | `2m` |
 | `SUBAGENT_MAX_PARALLEL` | Tasks of one call of `subagent` | `4` |
 | `SUBAGENT_MAX_PER_TURN` | Subagents of one turn | `8` |
 | `SUBAGENT_TIMEOUT` | Longest task of a subagent (and never past the end of the turn) | `15m` |
