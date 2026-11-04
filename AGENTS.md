@@ -6,7 +6,7 @@ Guide for coding agents and developers working in this repository.
 
 Nabu is three repositories checked out side by side: `nabu-core` (Go backend), `nabu-web` (SPA) and
 `nabu` (this one: public docs and the reusable deploy workflow). As with Hammurapi, the charts
-`nabu-core`/`nabu-web` and the deploy script `bin/nabu-deploy` live in `hammurapi-infra`, the
+`nabu-core`/`nabu-web` and the deploy script `bin/nabu-deploy` live in `installer`, the
 repository of the stand. The specification is `hammurapi-specs/specs/NAB/CMN/FTR.NAB.CMN-0001/`.
 
 - Deviations from a spec are written into the spec (version bump, "Принятые решения").
@@ -32,7 +32,7 @@ A change is ready when every job of `.github/workflows/checks.yml` passes locall
 matching lines below. Read the workflow for the exact commands. Install a missing tool outside the repository
 at the pinned version. Name any job you could not run in your report, with the reason.
 
-- `deploy-component.yml`: its post-deploy checks describe the charts of `hammurapi-infra`; compare them with the routes of the chart version being released, and tag this repository before bumping `DEPLOY_WORKFLOW_REF`.
+- `deploy-component.yml`: its post-deploy checks describe the charts of `installer`; compare them with the routes of the chart version being released, and tag this repository before bumping `DEPLOY_WORKFLOW_REF`.
 - Always, after the checks pass: run the `code-review` skill on the diff to be committed. Fix each finding, or name it in your report with the reason it stays. Ask the user when you doubt a finding.
 
 ## Rules
@@ -40,14 +40,14 @@ at the pinned version. Name any job you could not run in your report, with the r
 - Configuration and secrets reach the machine as one JSON on the stdin of SSH, built by `jq` from
   `$ENV` — never in arguments, files or logs. `checks.yml` compiles the payload; keep it passing.
 - The workflow runs `/opt/hammurapi-infra/current/bin/nabu-deploy`; the chart version is the
-  `CHART_VERSION` of the caller (a release of `hammurapi-infra`).
+  `CHART_VERSION` of the caller (a release of `installer`).
 - The workflow is YAML: edit it by hand; do not run generic formatters. `actionlint` must pass with
   shellcheck 0.9 (the runner) and newer; pin actions by SHA.
 - Public hosts are `nabu.<domain>` and `nabu-api.<domain>`; they are in `PUBLIC_EXTRA_HOSTS` of the
-  stand certificate (`hammurapi-infra`).
+  stand certificate (`installer`).
 
 ## Releases
 
-Charts or `nabu-deploy` changed → tag `hammurapi-infra`. The workflow changed → tag this repository.
+Charts or `nabu-deploy` changed → tag `installer`. The workflow changed → tag this repository.
 Then bump `DEPLOY_WORKFLOW_REF` and `CHART_VERSION` in `nabu-core` and `nabu-web`
 (`deploy/sync-ref.sh`) and tag core and web.

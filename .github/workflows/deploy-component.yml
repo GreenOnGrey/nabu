@@ -4,7 +4,7 @@
 #
 # Nabu выкатывается на стенд Hammurapi (тот же minikube, namespace nabu), как
 # Hammurapi: на машине выполняется bin/nabu-deploy из /opt/hammurapi-infra/current,
-# а чарты nabu-core и nabu-web публикует релиз hammurapi-infra (CHART_VERSION —
+# а чарты nabu-core и nabu-web публикует релиз installer (CHART_VERSION —
 # версия стенда). Этот репозиторий на машину ничего не кладёт. Секреты —
 # переменные и секреты организации с префиксом NABU_; на машину они передаются
 # только в stdin SSH-сессии.

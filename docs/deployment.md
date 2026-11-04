@@ -3,12 +3,12 @@
 Nabu runs on the Hammurapi stand: the same minikube machine, the namespaces `nabu`,
 `nabu-sandboxes` and `nabu-agents` (a pod per user's agent), the stand's Postgres (CloudNativePG), Kafka (Strimzi) and S3 (SeaweedFS) with a
 separate database, bucket and topic prefix. It is deployed exactly like Hammurapi: the charts
-`nabu-core`, `nabu-web` and the script `bin/nabu-deploy` live in `hammurapi-infra` next to those of
+`nabu-core`, `nabu-web` and the script `bin/nabu-deploy` live in `installer` next to those of
 Hammurapi, and this repository holds only the docs and the reusable deploy workflow. A tag of this
 repository does not touch the machine.
 
 ```text
-hammurapi-infra tag vX.Y.Z → deploy-prod.yml: charts hammurapi-*, nabu-* (version X.Y.Z) to
+installer tag vX.Y.Z → deploy-prod.yml: charts hammurapi-*, nabu-* (version X.Y.Z) to
                              oci://ghcr.io/<org>/charts; the stand with bin/nabu-deploy in
                              /opt/hammurapi-infra/current
 nabu tag vX.Y.Z            → only a version of deploy-component.yml for core and web
@@ -20,15 +20,15 @@ deploy-component.yml       → configuration check, signature check, SSH (or IAP
 ```
 
 `nabu-core/deploy/versions.env` and `nabu-web/deploy/versions.env` pin `DEPLOY_WORKFLOW_REF` (a tag
-of this repository) and `CHART_VERSION` (a release of `hammurapi-infra`). The order of a change:
-charts or `nabu-deploy` → tag `hammurapi-infra`; the workflow → tag this repository; then bump
+of this repository) and `CHART_VERSION` (a release of `installer`). The order of a change:
+charts or `nabu-deploy` → tag `installer`; the workflow → tag this repository; then bump
 `deploy/versions.env` in core and web (`deploy/sync-ref.sh`) and tag them.
 
 ## Before the first release
 
-1. **The stand.** `hammurapi-infra` is installed (`/opt/hammurapi-infra/current`) with the public
+1. **The stand.** `installer` is installed (`/opt/hammurapi-infra/current`) with the public
    domain. Its certificate must include `nabu.<domain>` and `nabu-api.<domain>`: they are in
-   `PUBLIC_EXTRA_HOSTS` of `hammurapi-infra/config/defaults.env` from the infra release that added Nabu;
+   `PUBLIC_EXTRA_HOSTS` of `installer/config/defaults.env` from the infra release that added Nabu;
    `nabu-deploy` also adds them if they are missing.
 2. **GitHub OAuth App for sign-in** (organization → Settings → Developer settings → OAuth Apps):
    - Homepage URL: `https://nabu.<domain>`
@@ -70,7 +70,7 @@ appear in command arguments, files or logs.
 
 ## What `nabu-deploy` does
 
-1. Checks the stand (`hammurapi-infra.sh status`), takes a lock.
+1. Checks the stand (`installer status`), takes a lock.
 2. Creates the namespaces `nabu`, `nabu-sandboxes` and `nabu-agents` (with the `restricted` pod
    security level), the pull secret `ghcr-pull` in each.
 3. Writes `nabu-config` (ConfigMap) and `nabu-secrets` (Secret); keeps `AGENT_SERVICE_TOKEN` and
