@@ -1,5 +1,5 @@
-# Проверки на каждый PR: actionlint и сборка payload выкатки. Чарты Nabu и
-# bin/nabu-deploy живут в installer и проверяются там.
+# Checks on every PR: actionlint and the rollout payload. Nabu charts and
+# bin/nabu-deploy live in installer and are checked there.
 name: checks
 on:
   pull_request:
@@ -16,8 +16,8 @@ jobs:
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/914e7df21a07ef503a81201c76d2b11c789d3fca/scripts/download-actionlint.bash) 1.7.12
           ./actionlint -color
-      # actionlint не разбирает jq: сборка payload выкатки компилируется, пустые
-      # значения не попадают на стенд, секреты — только в secrets.
+      # actionlint does not parse jq: the rollout payload compiles, empty
+      # values stay off the stand, and secrets go only to secrets.
       - name: jq payload deploy-component.yml
         run: |
           python3 - <<'EOF'
