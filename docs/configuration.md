@@ -32,6 +32,7 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | OIDC provider (PKCE; a verified email is required) | — (required for `oidc`) |
 | `OIDC_SCOPES`, `OIDC_PROVIDER_NAME` | Scopes and the name on the sign-in button | `openid email profile`, `Keycloak` |
 | `BOOTSTRAP_ADMINS` | Emails that become global administrators on the first sign-in | — |
+| `BOOTSTRAP_CLIENTS` | The first service clients, created at the start of `api` if absent, with delegation: a JSON array `[{"name": "hammurapi", "secretSha256": "<sha256 of the secret, hex>", "url": "https://hammurapi.example.com", "agents": []}]`. An existing client stays as an administrator set it. The installer sets it to connect Hammurapi | — |
 | `DEFAULT_LANGUAGE`, `DEFAULT_TIMEZONE` | Defaults of new users (`en`, `ru`, `de`, `es`, `zh`) | `en`, `Europe/Moscow` |
 
 ## Secrets and storage
