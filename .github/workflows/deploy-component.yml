@@ -3,7 +3,7 @@
 #   uses: GreenOnGrey/nabu/.github/workflows/deploy-component.yml@<DEPLOY_WORKFLOW_REF>
 #
 # Nabu rolls out to the Hammurapi stand (the same minikube, namespace nabu), like
-# Hammurapi: the machine runs bin/nabu-deploy from /opt/hammurapi-infra/current,
+# Hammurapi: the machine runs bin/nabu-deploy from /opt/installer/current,
 # and a release of installer publishes the charts nabu-core and nabu-web (CHART_VERSION is
 # the stand's version). This repository puts nothing on the machine. Secrets are
 # organization variables and secrets with the prefix NABU_; they reach the machine
@@ -38,7 +38,7 @@ jobs:
       CALLBACK_URL: ${{ inputs.callback_url }}
       DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
       DEPLOY_TRANSPORT: ${{ vars.DEPLOY_TRANSPORT || 'ssh' }}
-      PROD_DIR: /opt/hammurapi-infra
+      PROD_DIR: /opt/installer
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       CALLBACK_SECRET: ${{ secrets.NABU_DEPLOY_CALLBACK_SECRET }}
     steps:

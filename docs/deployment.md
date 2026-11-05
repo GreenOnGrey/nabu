@@ -10,13 +10,13 @@ repository does not touch the machine.
 ```text
 installer tag vX.Y.Z → deploy-prod.yml: charts hammurapi-*, nabu-* (version X.Y.Z) to
                              oci://ghcr.io/<org>/charts; the stand with bin/nabu-deploy in
-                             /opt/hammurapi-infra/current
+                             /opt/installer/current
 nabu tag vX.Y.Z            → only a version of deploy-component.yml for core and web
 nabu-core / nabu-web tag   → release.yml there: image, SBOM, cosign signature, Trivy,
                              then deploy-component.yml of this repo (DEPLOY_WORKFLOW_REF)
 deploy-component.yml       → configuration check, signature check, SSH (or IAP) to the machine,
                              JSON with configuration and secrets on stdin of
-                             /opt/hammurapi-infra/current/bin/nabu-deploy, checks through the public domains
+                             /opt/installer/current/bin/nabu-deploy, checks through the public domains
 ```
 
 `nabu-core/deploy/versions.env` and `nabu-web/deploy/versions.env` pin `DEPLOY_WORKFLOW_REF` (a tag
@@ -26,7 +26,7 @@ charts or `nabu-deploy` → tag `installer`; the workflow → tag this repositor
 
 ## Before the first release
 
-1. **The stand.** `installer` is installed (`/opt/hammurapi-infra/current`) with the public
+1. **The stand.** `installer` is installed (`/opt/installer/current`) with the public
    domain. Its certificate must include `nabu.<domain>` and `nabu-api.<domain>`: they are in
    `PUBLIC_EXTRA_HOSTS` of `installer/config/defaults.env` from the infra release that added Nabu;
    `nabu-deploy` also adds them if they are missing.
