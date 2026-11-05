@@ -18,6 +18,10 @@ issues).
 
 ## 1. The client in Nabu
 
+The installer, when it installs Nabu and Hammurapi together, creates this client itself through
+`BOOTSTRAP_CLIENTS` ([configuration.md](configuration.md)); allow its service agents afterwards in
+**Admin → Clients**. By hand:
+
 **Admin → Clients → New client**:
 
 | Field | Value |
