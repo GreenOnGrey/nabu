@@ -11,6 +11,7 @@ repository of the stand. The specification is `hammurapi-specs/specs/NAB/CMN/FTR
 
 - Deviations from a spec are written into the spec (version bump, "Принятые решения").
 - Do not commit, tag or push unless asked.
+- English for code, comments, docs, CI, scripts, logs, test names, and the messages and tool descriptions that services return. Russian stays in test data that exercises Russian text and the specifications in `hammurapi-specs`.
 
 ## Contents
 
