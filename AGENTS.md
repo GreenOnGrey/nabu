@@ -40,7 +40,7 @@ at the pinned version. Name any job you could not run in your report, with the r
 
 - Configuration and secrets reach the machine as one JSON on the stdin of SSH, built by `jq` from
   `$ENV` — never in arguments, files or logs. `checks.yml` compiles the payload; keep it passing.
-- The workflow runs `/opt/hammurapi-infra/current/bin/nabu-deploy`; the chart version is the
+- The workflow runs `/opt/installer/current/bin/nabu-deploy`; the chart version is the
   `CHART_VERSION` of the caller (a release of `installer`).
 - The workflow is YAML: edit it by hand; do not run generic formatters. `actionlint` must pass with
   shellcheck 0.9 (the runner) and newer; pin actions by SHA.
