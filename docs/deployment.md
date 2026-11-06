@@ -18,7 +18,9 @@ nabu-core / nabu-web tag   → release.yml there: image, SBOM, cosign signature,
                              then deploy-component.yml of this repo (DEPLOY_WORKFLOW_REF)
 deploy-component.yml       → configuration check, signature check, SSH (or IAP) to the machine,
                              JSON with configuration and secrets on stdin of
-                             /opt/installer/current/bin/nabu-deploy, checks through the public domains
+                             /opt/installer/current/bin/nabu-deploy, checks through the public domains;
+                             then a PR to installer with the version in config/versions.env
+                             (the GitHub App VERSIONS_APP_ID, VERSIONS_APP_PRIVATE_KEY)
 ```
 
 `nabu-core/deploy/versions.env` and `nabu-web/deploy/versions.env` pin `DEPLOY_WORKFLOW_REF` (a tag
@@ -52,6 +54,7 @@ charts or `nabu-deploy` → tag `installer`; the workflow → tag this repositor
 | `NABU_DEFAULT_LANGUAGE`, `NABU_DEFAULT_TIMEZONE` | Defaults of new users | `en`, `Europe/Moscow` |
 | `NABU_WHISPER_URL` | Speech recognition for voice messages; empty — voice input is off | — |
 | `DEPLOY_TRANSPORT`, `PROD_HOST`, `PROD_USER`, `GCP_*` | Access to the machine — the same as for Hammurapi | `ssh` |
+| `VERSIONS_APP_ID` | Optional: the ID of that GitHub App; without it no PR of the version is opened | — |
 
 ### Secrets
 
@@ -65,6 +68,7 @@ charts or `nabu-deploy` → tag `installer`; the workflow → tag this repositor
 | `NABU_TELEGRAM_BOT_TOKEN` | Optional: the Telegram bot; the webhook secret is generated and kept |
 | `NABU_SKILLS_GIT_TOKEN` | Optional: reads skill repositories of the catalog |
 | `NABU_DEPLOY_CALLBACK_SECRET` | Optional: signs the deploy result callback (deploy contract of Hammurapi) |
+| `VERSIONS_APP_PRIVATE_KEY` | Optional: the private key of the GitHub App that opens the PR of the version in `installer` after a rollout to production. The App has Contents and Pull requests (read and write), installed only on `installer` |
 | `PROD_SSH_KEY`, `PROD_KNOWN_HOSTS` | SSH to the machine — the same as for Hammurapi |
 
 Secrets travel as one JSON on the stdin of SSH and land in the Secret `nabu-secrets`; they never
