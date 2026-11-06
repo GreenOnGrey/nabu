@@ -1,5 +1,7 @@
 # Deployment
 
+**To install Nabu**, use the [installer](https://github.com/GreenOnGrey/installer). It installs on one machine with minikube or into an existing Kubernetes cluster, with built-in or external storages, and handles updates. Start with [its quick start](https://github.com/GreenOnGrey/installer/blob/main/docs/quickstart.md); [products.md](https://github.com/GreenOnGrey/installer/blob/main/docs/products.md) covers the sign-in and the connection to Hammurapi. This page describes how the releases of Nabu reach our own production.
+
 Nabu runs on the Hammurapi stand: the same minikube machine, the namespaces `nabu`,
 `nabu-sandboxes` and `nabu-agents` (a pod per user's agent), the stand's Postgres (CloudNativePG), Kafka (Strimzi) and S3 (SeaweedFS) with a
 separate database, bucket and topic prefix. It is deployed exactly like Hammurapi: the charts
