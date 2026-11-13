@@ -163,7 +163,9 @@ without them office files stay download tiles.
 | `MEMORY_RUN_TIMEOUT`, `MEMORY_BACKFILL_DAYS` | The longest run of the collector; the depth of the first collection | `10m`, `30` |
 | `MEMORY_HOUSEKEEPING_EVERY` | How often paused collections are checked: the access to a source is back, the monthly limit allows | `10m` |
 | `MEMORY_BACKFILL_POOL_SHARE`, `MEMORY_EMBED_BATCH` | The share of concurrent runs a first collection may take; notes per request of embeddings | `0.3`, `64` |
-| `MEMORY_GMAIL_OVERLAP` | How far before its cursor the Gmail adapter searches; what is already collected is told apart by message ids | `24h` |
+| `MEMORY_GMAIL_OVERLAP` | How far before its cursor the adapters of mail search (Gmail, IMAP, VK WorkMail); what is already collected is told apart by message ids | `24h` |
+| `MEMORY_VK_OVERLAP` | How far before its cursor the VK Teams source of VK WorkSpace reads chats; repeated messages are told apart by their ids | `1h` |
+| `MEMORY_VK_CHAT_LIMIT` | Messages of one VK Teams chat a run of the collection reads, from the latest; the run result names the chats where it stopped ([memory.md](memory.md)) | `1000` |
 | `MEMORY_AGENT_ADDR` | The pool of the collector agent (`agent-memory`); empty — the common pool `AGENT_ADDR` | — |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | The first configuration of the Telegram channel: copied into the channel once, later the channel is managed in **Admin → Channels** | — |
 | `TELEGRAM_API_URL` | Bot API | `https://api.telegram.org` |
