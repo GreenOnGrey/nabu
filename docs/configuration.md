@@ -10,7 +10,7 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | Variable | Purpose | Default |
 | --- | --- | --- |
 | `PUBLIC_WEB_URL` | The site (`https://nabu.<domain>`) | `http://localhost:5173` |
-| `PUBLIC_API_URL` | The API (`https://nabu-api.<domain>`); also the issuer of Nabu's JWTs | `http://localhost:8080` |
+| `PUBLIC_API_URL` | The API (`https://nabu-api.<domain>`); also the issuer of Nabu's JWTs. The callback of MCP items is `<PUBLIC_API_URL>/api/v1/oauth/mcp/callback`; a provider that checks its redirect allowlist (VK WorkSpace) needs it there | `http://localhost:8080` |
 | `INTERNAL_URL` | The internal server of `api` as the agent operator and sandboxes reach it | `http://localhost:8081` |
 | `COOKIE_DOMAIN` | Domain of the session cookies shared by the site and the API | — |
 | `CORS_ALLOWED_ORIGINS` | Origins allowed to call the API with cookies | — |
