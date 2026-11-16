@@ -14,7 +14,12 @@ adapter of its server and mark it. Only a personal item with an adapter can be a
 
 1. **Admin → Catalog → Add MCP**: URL `https://ai.workspace.vk.ru/mcp`, access **personal**, personal access
    **OAuth MCP (automatic)**. On save Nabu finds the authorization server of VK WorkSpace and registers its client
-   with the callback of the item; the card shows the server and the client. Nothing is entered by hand.
+   with the callback of MCP items, `https://<PUBLIC_API_URL>/api/v1/oauth/mcp/callback`; the card shows the server
+   and the client. Nothing is entered by hand.
+   That one address is shared by every MCP item, so it must be in the allowlist of the VK WorkSpace deployment:
+   VK accepts only a loopback address, the callback of the Claude app and the addresses its deployment lists, and
+   answers `invalid_request: redirect_uri is missing or is not one of…` to any other. Ask VK support to add the
+   address; until then **Connect** cannot pass and the item stays unusable.
 2. Connect the item yourself in **Connections** and press **Check** in the card: the tools of the server appear.
    Allow the tools the agent may use; the collection needs `messenger-get-current-user`,
    `messenger-list-chats`, `messenger-list-messages` for VK Teams and `mail-list-folders`, `mail-search`,
@@ -34,4 +39,6 @@ What is collected:
 
 **Re-register the client** in the card when VK WorkSpace forgot it: the connections of users are reset, they
 connect again, and their collection pauses until then. If the discovery fails, the card names the reason
-and offers to fill OAuth in by hand.
+and offers to fill OAuth in by hand. Re-register once after an upgrade from a version that registered the
+client with the per-item address (`…/api/v1/oauth/callback/<item id>`): VK WorkSpace ignores the mismatch,
+but another MCP server remembers the address it was given and would refuse the exchange of the code.
