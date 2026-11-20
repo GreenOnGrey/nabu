@@ -159,6 +159,8 @@ without them office files stay download tiles.
 | `TASK_MIN_INTERVAL`, `TASK_MAX_ACTIVE`, `TASK_MAX_FAILURES` | Limits of recurring tasks per user | `15m`, `20`, `3` |
 | `TASK_CATCHUP_WINDOW` | After downtime only the last missed run within this window is executed | `1h` |
 | `MEMORY_GRAPH_MAX_NODES` | The most linked people and topics the graph of communications returns (FTR.NAB.CMN-0003) | `150` |
+| `MEMORY_GRAPH_NODE_EDGES` | The strongest links of each node the graph of communications keeps (FTR.NAB.MEM-0001 R24) | `8` |
+| `MEMORY_GRAPH_MAX_EDGES` | The links the graph of communications returns in all (FTR.NAB.MEM-0001 R24) | `600` |
 | `MEMORY_COLLECT_CONCURRENCY`, `MEMORY_BATCH_THREADS` | Runs of the collector of communications at a time; threads in a batch of one run. The administrator overrides the threads in Administration → Memory of communications, without a restart | `40`, `8` |
 | `MEMORY_RUN_TIMEOUT`, `MEMORY_BACKFILL_DAYS` | The longest run of the collector, overridden in the same section; the depth of the first collection | `20m`, `30` |
 | `MEMORY_HOUSEKEEPING_EVERY` | How often paused collections are checked: the access to a source is back, the monthly limit allows | `10m` |
