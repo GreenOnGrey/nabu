@@ -52,6 +52,7 @@ days (`15m`, `365d`); sizes accept `KB`, `MB`, `GB`.
 | `AGENT_SERVICE_TOKEN` | Shared token of `api`, `worker` and `agent` | — (required for `worker`, `agent`) |
 | `AGENT_IDLE_TIMEOUT` | An idle session is saved to S3 and closed | `15m` |
 | `TURN_TIMEOUT` | Longest turn of the agent | `30m` |
+| `TURN_SILENCE_TIMEOUT` | A turn that gets no events from the agent runtime for this long ends as a failure the user may retry (FTR.NAB.CMN-0010 R10); `0` switches the watchdog off | `3m` |
 | `CHAT_QUEUE_MAX` | Messages that may wait in a conversation while the agent answers (FTR.NAB.CHAT-0004); one more is refused (`queue_full`) | `10` |
 | `SUBAGENTS_ENABLED` | Agents may start subagents with the tool `subagent` (FTR.NAB.CMN-0009) | `true` |
 | `STALL_DETECTOR_ENABLED` | Stop turns that repeat one action with no result (`FTR.NAB.CMN-0010`) | `true` |
